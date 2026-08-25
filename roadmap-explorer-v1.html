@@ -24,6 +24,7 @@
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;background:transparent;color:var(--text);}
+  body{background:var(--bg);}
   .app{padding:20px 20px 44px;}
 
   .topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px;}
@@ -89,16 +90,16 @@
   .node-children{padding-left:20px;margin-top:6px;}
   .node-children.hidden{display:none;}
 
-  .leaf{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 2px;border-radius:8px;transition:background .1s;}
-  .leaf.drag-over{background:rgba(94,234,212,.06);}
+  .leaf{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 2px;border-radius:8px;transition:background .15s, outline .15s;}
+  .leaf.drag-over{background:rgba(94,234,212,.08);outline:2px dashed var(--accent-progress);outline-offset:-2px;}
   .leaf-empty{color:var(--text-faint);font-size:11.5px;font-family:'IBM Plex Mono',monospace;padding:8px 0;}
 
-  .card{background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:0;cursor:grab;width:210px;flex:0 0 auto;display:flex;flex-direction:column;gap:0;border-top:3px solid transparent;border-bottom:3px solid transparent;}
+  .card{background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:0;cursor:grab;width:210px;flex:0 0 auto;display:flex;flex-direction:column;gap:0;transition:box-shadow .1s, border-color .1s, opacity .1s;}
   .card:active{cursor:grabbing;}
   .card.dragging{opacity:.35;}
   .card.archived{opacity:.55;}
-  .card.drag-insert-before{border-top-color:var(--accent-progress);}
-  .card.drag-insert-after{border-bottom-color:var(--accent-progress);}
+  .card.drag-insert-before{box-shadow:inset 4px 0 0 var(--accent-progress), 0 0 10px rgba(94,234,212,.2);border-color:var(--accent-progress);}
+  .card.drag-insert-after{box-shadow:inset -4px 0 0 var(--accent-progress), 0 0 10px rgba(94,234,212,.2);border-color:var(--accent-progress);}
   .card-inner{padding:10px 11px 9px;display:flex;flex-direction:column;gap:6px;}
   .card-header{cursor:grab;padding:2px 2px 4px;margin:-2px -2px 2px;border-radius:6px;}
   .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
@@ -690,11 +691,11 @@ function renderCardNode(node, path){
     const wrap = document.createElement('div');
     wrap.className = 'leaf';
     if(list.length===0){ wrap.innerHTML = '<div class="leaf-empty">Nothing here</div>'; }
-    else { list.forEach(c=> wrap.appendChild(renderCard(c, leafKey))); }
+    else { list.forEach(c=> wrap.appendChild(renderCard(c, leafKey, path, list))); }
     wrap.addEventListener('dragover', e=>{ e.preventDefault(); wrap.classList.add('drag-over'); });
     wrap.addEventListener('dragleave', ()=> wrap.classList.remove('drag-over'));
     wrap.addEventListener('drop', async e=>{
-      e.preventDefault(); wrap.classList.remove('drag-over');
+      e.preventDefault(); wrap.classList.remove('drag-over'); clearDragHints();
       const id = e.dataTransfer.getData('text/plain');
       if(id) await reorderAndAssign(id, path, leafKey, list);
     });
@@ -716,7 +717,7 @@ function renderCardNode(node, path){
     head.addEventListener('dragover', e=>{ e.preventDefault(); head.classList.add('drop-target-active'); });
     head.addEventListener('dragleave', ()=> head.classList.remove('drop-target-active'));
     head.addEventListener('drop', async e=>{
-      e.preventDefault(); e.stopPropagation(); head.classList.remove('drop-target-active');
+      e.preventDefault(); e.stopPropagation(); head.classList.remove('drop-target-active'); clearDragHints();
       const id = e.dataTransfer.getData('text/plain');
       if(id) await reorderAndAssign(id, groupPath, pathKey, g.cards);
     });
@@ -729,7 +730,7 @@ function renderCardNode(node, path){
   });
   return frag;
 }
-function renderCard(c, leafKey){
+function renderCard(c, leafKey, path=[], leafList=[]){
   const s = STATUSES.find(x=>x.key===c.status) || STATUSES[0];
   const card = document.createElement('div');
   card.className = 'card' + (c.archived?' archived':'');
@@ -756,16 +757,24 @@ function renderCard(c, leafKey){
     </div>
   `;
   card.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', c.id); setTimeout(()=>card.classList.add('dragging'),0); });
-  card.addEventListener('dragend', ()=> card.classList.remove('dragging'));
+  card.addEventListener('dragend', ()=>{ card.classList.remove('dragging'); clearDragHints(); });
   card.addEventListener('dragover', e=>{
     e.preventDefault();
     const rect = card.getBoundingClientRect();
-    const before = e.clientY < rect.top + rect.height/2;
+    const before = e.clientX < rect.left + rect.width/2;
+    document.querySelectorAll('.card.drag-insert-before, .card.drag-insert-after').forEach(el=>{
+      if(el!==card) el.classList.remove('drag-insert-before','drag-insert-after');
+    });
     card.classList.toggle('drag-insert-before', before);
     card.classList.toggle('drag-insert-after', !before);
     dragOverInfo = { leafKey, overCardId: c.id, pos: before?'before':'after' };
   });
   card.addEventListener('dragleave', ()=>{ card.classList.remove('drag-insert-before','drag-insert-after'); });
+  card.addEventListener('drop', async e=>{
+    e.preventDefault(); e.stopPropagation(); clearDragHints();
+    const id = e.dataTransfer.getData('text/plain');
+    if(id) await reorderAndAssign(id, path, leafKey, leafList);
+  });
   card.querySelector('.card-title').addEventListener('click', ()=> openModal(c.id));
   const badge = card.querySelector('.version-badge');
   if(badge) badge.addEventListener('click', e=>{ e.stopPropagation(); card.querySelector('.release-notes').classList.toggle('open'); });
