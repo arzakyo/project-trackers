@@ -83,12 +83,12 @@
   .node-head{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:9px;background:var(--panel);border:1px solid var(--border-soft);border-left:3px solid var(--nodecolor);cursor:pointer;transition:box-shadow .1s,background .1s;}
   .node-head:hover{background:var(--panel-2);}
   .node-head.drop-target-active{box-shadow:0 0 0 2px var(--accent-progress) inset;background:rgba(94,234,212,.08);}
-  .chevron{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);width:10px;flex:0 0 auto;transition:transform .12s;}
+  .chevron{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);width:10px;flex:0 0 auto;transition:transform 100ms ease-in-out;}
   .chevron.collapsed{transform:rotate(-90deg);}
   .node-label{font-size:13px;font-weight:700;}
   .node-count{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--text-faint);background:var(--panel-2);padding:1px 8px;border-radius:999px;}
-  .node-children{padding-left:20px;margin-top:6px;}
-  .node-children.hidden{display:none;}
+  .node-children{padding-left:20px;margin-top:6px;max-height:3000px;opacity:1;overflow:hidden;transition:max-height 100ms ease-in-out, opacity 100ms ease-in-out, margin 100ms ease-in-out, padding 100ms ease-in-out;}
+  .node-children.hidden{display:block !important;max-height:0 !important;opacity:0;margin-top:0;padding-top:0;padding-bottom:0;pointer-events:none;}
 
   .leaf{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 2px;border-radius:8px;transition:background .15s, outline .15s;}
   .leaf.drag-over{background:rgba(94,234,212,.08);outline:2px dashed var(--accent-progress);outline-offset:-2px;}
@@ -118,11 +118,26 @@
   .card-foot{display:flex;justify-content:space-between;align-items:center;gap:6px;}
   .owner-tag{font-size:10px;color:var(--text-dim);}
   .blocked-note{font-size:9.5px;color:var(--accent-blocked);font-family:'IBM Plex Mono',monospace;}
+  .version-wrap{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;}
   .version-badge{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--version);background:rgba(147,197,253,.12);padding:1px 7px;border-radius:5px;cursor:pointer;align-self:flex-start;}
-  .release-notes{font-size:10.5px;color:var(--text-dim);background:var(--panel);border:1px solid var(--border-soft);border-radius:6px;padding:6px 8px;line-height:1.4;display:none;}
+  .version-info-btn{background:rgba(147,197,253,.14);color:var(--version);border:1px solid rgba(147,197,253,.25);border-radius:4px;width:17px;height:17px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;padding:0;line-height:1;transition:background .15s, border-color .15s;}
+  .version-info-btn:hover{background:rgba(147,197,253,.3);border-color:var(--version);}
+  .release-notes{font-size:10.5px;color:var(--text-dim);background:var(--panel);border:1px solid var(--border-soft);border-radius:6px;padding:6px 8px;line-height:1.4;display:none;margin-top:4px;}
   .release-notes.open{display:block;}
   .meta-time{font-size:9px;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;}
   .archived-tag{font-size:9px;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;border:1px solid var(--border);padding:0 5px;border-radius:4px;align-self:flex-start;}
+  .has-ctx-menu{cursor:context-menu;}
+
+  /* context menu */
+  .context-menu{position:fixed;z-index:200;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.45);padding:6px;min-width:180px;max-width:280px;display:none;flex-direction:column;gap:2px;}
+  .context-menu.open{display:flex;}
+  .context-menu-header{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;color:var(--text-faint);padding:4px 8px;border-bottom:1px solid var(--border-soft);margin-bottom:2px;letter-spacing:.05em;}
+  .context-menu-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;font-size:12px;color:var(--text);cursor:pointer;background:none;border:none;width:100%;text-align:left;font-family:inherit;transition:background .1s;}
+  .context-menu-item:hover{background:var(--panel-2);}
+  .context-menu-item.active{font-weight:600;color:var(--accent-progress);}
+  .context-menu-divider{height:1px;background:var(--border-soft);margin:3px 0;}
+
+  #importPreviewTable td,#importPreviewTable th{border-bottom:1px solid var(--border-soft);}
 
   /* table view */
   .table-wrap{overflow-x:auto;border:1px solid var(--border-soft);border-radius:12px;}
@@ -137,7 +152,7 @@
   table.roadmap-table tr:hover td{background:var(--panel-2);}
   table.roadmap-table tr.drag-insert-before td{box-shadow:inset 0 2px 0 var(--accent-progress);}
   table.roadmap-table tr.drag-insert-after td{box-shadow:inset 0 -2px 0 var(--accent-progress);}
-  tr.group-row td{background:var(--panel-2);font-weight:700;font-size:12px;cursor:pointer;border-left:3px solid var(--nodecolor);padding:8px 10px;}
+  tr.group-row td{background:var(--panel-2);font-weight:700;font-size:12px;cursor:pointer;border-left:3px solid var(--nodecolor);padding:8px 10px;transition:background 100ms ease-in-out;}
   tr.group-row.drop-target-active td{box-shadow:inset 0 0 0 2px var(--accent-progress);}
   tr.group-row .node-count{margin-left:8px;}
   .drag-handle{color:var(--text-faint);font-family:'IBM Plex Mono',monospace;cursor:grab;}
@@ -308,6 +323,33 @@
     </div>
     <p style="font-size:11px;color:var(--text-faint);margin-top:8px;">Removing an owner from this list won't change items already assigned to them.</p>
     <div class="modal-actions"><div class="right"><button class="btn small" id="closeOwnersBtn">Close</button></div></div>
+  </div>
+</div>
+
+<div class="context-menu" id="contextMenu"></div>
+
+<div class="overlay" id="importPreviewOverlay">
+  <div class="modal" style="max-width:640px;">
+    <h3>Import Preview</h3>
+    <p style="font-size:12px;color:var(--text-dim);margin:-4px 0 12px;" id="importPreviewSummary"></p>
+    <div id="importPreviewNotice" style="font-size:11.5px;color:var(--pri-med);font-family:'IBM Plex Mono',monospace;margin-bottom:8px;display:none;background:rgba(251,191,36,.08);padding:8px;border-radius:6px;border:1px solid rgba(251,191,36,.25);"></div>
+    <div style="max-height:320px;overflow-y:auto;border:1px solid var(--border-soft);border-radius:8px;margin-bottom:14px;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;" id="importPreviewTable">
+        <thead>
+          <tr style="background:var(--panel-2);text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;color:var(--text-faint);">
+            <th style="padding:7px 10px;">Status</th>
+            <th style="padding:7px 10px;">ID</th>
+            <th style="padding:7px 10px;">Title</th>
+            <th style="padding:7px 10px;">Details</th>
+          </tr>
+        </thead>
+        <tbody id="importPreviewBody"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <div class="left"><button class="btn small" id="importCancelBtn">Cancel</button></div>
+      <div class="right"><button class="btn primary small" id="importConfirmBtn">Confirm Import</button></div>
+    </div>
   </div>
 </div>
 
@@ -730,6 +772,193 @@ function renderCardNode(node, path){
   });
   return frag;
 }
+function toggleReleaseNotes(cardId){
+  const cardNotes = document.getElementById(`card-rn-${cardId}`);
+  if(cardNotes) cardNotes.classList.toggle('open');
+  const tblNotes = document.getElementById(`tbl-rn-${cardId}`);
+  if(tblNotes) tblNotes.classList.toggle('open');
+}
+
+let activeContextMenu = null;
+function hideContextMenu(){
+  const cm = document.getElementById('contextMenu');
+  if(cm){ cm.classList.remove('open'); cm.innerHTML = ''; }
+  activeContextMenu = null;
+}
+document.addEventListener('click', hideContextMenu);
+document.addEventListener('contextmenu', e=>{
+  if(!e.target.closest('.has-ctx-menu')) hideContextMenu();
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') hideContextMenu(); });
+
+function showContextMenu(e, item, field){
+  e.preventDefault();
+  e.stopPropagation();
+  const cm = document.getElementById('contextMenu');
+  cm.innerHTML = '';
+  
+  const head = document.createElement('div');
+  head.className = 'context-menu-header';
+  head.textContent = `${field.toUpperCase()} · ${item.id}`;
+  cm.appendChild(head);
+
+  if(field === 'type'){
+    const options = [
+      {key:'feature', label:'Feature'},
+      {key:'bug', label:'Bug fix'},
+    ];
+    options.forEach(opt=>{
+      const btn = document.createElement('button');
+      btn.className = 'context-menu-item' + (item.type===opt.key ? ' active' : '');
+      btn.innerHTML = `${item.type===opt.key?'✓ ':''}${opt.label}`;
+      btn.onclick = async ()=>{
+        item.type = opt.key;
+        item.updatedAt = nowISO();
+        await persistCards();
+        render();
+        hideContextMenu();
+      };
+      cm.appendChild(btn);
+    });
+  } else if(field === 'priority'){
+    PRIORITIES.forEach(p=>{
+      const btn = document.createElement('button');
+      btn.className = 'context-menu-item' + (item.priority===p.key ? ' active' : '');
+      btn.innerHTML = `<span style="color:${p.color}">●</span> ${item.priority===p.key?'✓ ':''}${p.label}`;
+      btn.onclick = async ()=>{
+        item.priority = p.key;
+        item.updatedAt = nowISO();
+        await persistCards();
+        render();
+        hideContextMenu();
+      };
+      cm.appendChild(btn);
+    });
+  } else if(field === 'status'){
+    STATUSES.forEach(st=>{
+      const btn = document.createElement('button');
+      btn.className = 'context-menu-item' + (item.status===st.key ? ' active' : '');
+      btn.innerHTML = `<span style="color:${st.color}">●</span> ${item.status===st.key?'✓ ':''}${st.label}`;
+      btn.onclick = async ()=>{
+        if(st.key==='blocked'){
+          hideContextMenu();
+          openModal(item.id, 'blocked');
+          return;
+        }
+        if(st.key==='done' && !item.version){
+          hideContextMenu();
+          openModal(item.id, 'done');
+          return;
+        }
+        item.status = st.key;
+        if(st.key!=='blocked') item.blocked = '';
+        item.updatedAt = nowISO();
+        await persistCards();
+        render();
+        hideContextMenu();
+      };
+      cm.appendChild(btn);
+    });
+  } else if(field === 'owner'){
+    owners.forEach(o=>{
+      const btn = document.createElement('button');
+      btn.className = 'context-menu-item' + (item.owner===o ? ' active' : '');
+      btn.innerHTML = `${item.owner===o?'✓ ':''}${escapeHtml(o)}`;
+      btn.onclick = async ()=>{
+        item.owner = o;
+        item.updatedAt = nowISO();
+        await persistCards();
+        render();
+        hideContextMenu();
+      };
+      cm.appendChild(btn);
+    });
+    const div = document.createElement('div'); div.className = 'context-menu-divider'; cm.appendChild(div);
+    const customBtn = document.createElement('button');
+    customBtn.className = 'context-menu-item';
+    customBtn.textContent = '✏ Custom owner...';
+    customBtn.onclick = async ()=>{
+      hideContextMenu();
+      const val = prompt('Enter owner name:', item.owner || '');
+      if(val!==null){
+        item.owner = val.trim();
+        if(item.owner && !owners.includes(item.owner)){ owners.push(item.owner); await persistOwners(); }
+        item.updatedAt = nowISO();
+        await persistCards();
+        render();
+      }
+    };
+    cm.appendChild(customBtn);
+
+    if(item.owner){
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'context-menu-item';
+      clearBtn.style.color = 'var(--pri-high)';
+      clearBtn.textContent = '✕ Clear owner';
+      clearBtn.onclick = async ()=>{
+        item.owner = '';
+        item.updatedAt = nowISO();
+        await persistCards();
+        render();
+        hideContextMenu();
+      };
+      cm.appendChild(clearBtn);
+    }
+  } else if(field === 'version'){
+    const verBtn = document.createElement('button');
+    verBtn.className = 'context-menu-item';
+    verBtn.innerHTML = `🏷️ Change Version Value (current: ${escapeHtml(item.version||'None')})`;
+    verBtn.onclick = async ()=>{
+      hideContextMenu();
+      const val = prompt('Enter release version (e.g. v1.2.0):', item.version || '');
+      if(val!==null){
+        item.version = val.trim();
+        item.updatedAt = nowISO();
+        reconcileVersionFilter();
+        buildControls();
+        await persistCards();
+        render();
+      }
+    };
+    cm.appendChild(verBtn);
+
+    const notesBtn = document.createElement('button');
+    notesBtn.className = 'context-menu-item';
+    notesBtn.innerHTML = `📝 Edit Release Notes`;
+    notesBtn.onclick = async ()=>{
+      hideContextMenu();
+      const val = prompt('Edit release notes for ' + (item.version||item.id) + ':', item.notes || '');
+      if(val!==null){
+        item.notes = val.trim();
+        item.updatedAt = nowISO();
+        await persistCards();
+        render();
+      }
+    };
+    cm.appendChild(notesBtn);
+
+    const toggleNotesBtn = document.createElement('button');
+    toggleNotesBtn.className = 'context-menu-item';
+    toggleNotesBtn.innerHTML = `ℹ️ Toggle Release Notes display`;
+    toggleNotesBtn.onclick = ()=>{
+      hideContextMenu();
+      toggleReleaseNotes(item.id);
+    };
+    cm.appendChild(toggleNotesBtn);
+  }
+
+  cm.style.top = '0px';
+  cm.style.left = '0px';
+  cm.classList.add('open');
+  const rect = cm.getBoundingClientRect();
+  let x = e.clientX;
+  let y = e.clientY;
+  if(x + rect.width > window.innerWidth - 10) x = window.innerWidth - rect.width - 10;
+  if(y + rect.height > window.innerHeight - 10) y = window.innerHeight - rect.height - 10;
+  cm.style.left = Math.max(10, x) + 'px';
+  cm.style.top = Math.max(10, y) + 'px';
+}
+
 function renderCard(c, leafKey, path=[], leafList=[]){
   const s = STATUSES.find(x=>x.key===c.status) || STATUSES[0];
   const card = document.createElement('div');
@@ -750,7 +979,13 @@ function renderCard(c, leafKey, path=[], leafList=[]){
       <div class="status-label" style="--statuscolor:${s.color}"><span class="sw"></span>${s.label} &middot; ${PRI_SHORT[c.priority]}</div>
       <div class="track">${STATUSES.map((st,i)=>`<span class="track-dot ${i<=STATUS_INDEX[c.status]?'filled':''}" style="--dotcolor:${st.color}" data-status="${st.key}" title="${st.label}"></span>`).join('')}</div>
       ${c.status==='blocked' && c.blocked ? `<div class="blocked-note">⛔ ${escapeHtml(c.blocked)}</div>` : ''}
-      ${c.status==='done' && c.version ? `<div class="version-badge" title="${escapeHtml(c.notes||'No release notes yet')}">${escapeHtml(c.version)}</div><div class="release-notes">${escapeHtml(c.notes||'No release notes yet.')}</div>` : ''}
+      ${c.status==='done' && c.version ? `
+        <div class="version-wrap">
+          <div class="version-badge" title="Click to view release notes">${escapeHtml(c.version)}</div>
+          <button type="button" class="version-info-btn" title="View release notes">ℹ</button>
+        </div>
+        <div class="release-notes" id="card-rn-${c.id}">${escapeHtml(c.notes||'No release notes yet.')}</div>
+      ` : ''}
       ${c.archived ? `<span class="archived-tag">Archived</span>` : ''}
       ${view.showTime ? `<div class="meta-time">created ${fmtDate(c.createdAt)} &middot; updated ${fmtDate(c.updatedAt)}</div>` : ''}
       <div class="card-foot"><span class="owner-tag">${c.owner?escapeHtml(c.owner):''}</span></div>
@@ -776,8 +1011,23 @@ function renderCard(c, leafKey, path=[], leafList=[]){
     if(id) await reorderAndAssign(id, path, leafKey, leafList);
   });
   card.querySelector('.card-title').addEventListener('click', ()=> openModal(c.id));
-  const badge = card.querySelector('.version-badge');
-  if(badge) badge.addEventListener('click', e=>{ e.stopPropagation(); card.querySelector('.release-notes').classList.toggle('open'); });
+
+  const typePill = card.querySelector('.type-pill');
+  if(typePill){ typePill.classList.add('has-ctx-menu'); typePill.addEventListener('contextmenu', e=> showContextMenu(e, c, 'type')); }
+
+  const ownerTag = card.querySelector('.owner-tag');
+  if(ownerTag){ ownerTag.classList.add('has-ctx-menu'); ownerTag.addEventListener('contextmenu', e=> showContextMenu(e, c, 'owner')); }
+
+  const versionWrap = card.querySelector('.version-wrap');
+  if(versionWrap){
+    versionWrap.classList.add('has-ctx-menu');
+    versionWrap.addEventListener('contextmenu', e=> showContextMenu(e, c, 'version'));
+    const badge = card.querySelector('.version-badge');
+    const infoBtn = card.querySelector('.version-info-btn');
+    if(badge) badge.addEventListener('click', e=>{ e.stopPropagation(); toggleReleaseNotes(c.id); });
+    if(infoBtn) infoBtn.addEventListener('click', e=>{ e.stopPropagation(); toggleReleaseNotes(c.id); });
+  }
+
   card.querySelectorAll('.track-dot').forEach(dot=>{
     dot.addEventListener('click', async e=>{
       e.stopPropagation();
@@ -903,15 +1153,44 @@ function renderTableRow(c, path, leafList){
   tr.innerHTML = `
     <td class="drag-handle">⠿</td>
     <td><span class="row-title">${escapeHtml(c.title)}</span><span class="row-desc">${escapeHtml(c.desc||'')}</span></td>
-    <td><span class="type-pill ${c.type}">${c.type==='bug'?'Bug':'Feature'}</span></td>
-    <td style="color:${p.color}">${p.label.replace(' priority','')}</td>
-    <td style="color:${s.color}">${s.label}${c.status==='blocked'&&c.blocked?` (${escapeHtml(c.blocked)})`:''}</td>
-    <td>${c.owner?escapeHtml(c.owner):'<span class="dash">—</span>'}</td>
-    <td>${c.status==='done'&&c.version?`<span class="version-badge" title="${escapeHtml(c.notes||'No release notes yet')}">${escapeHtml(c.version)}</span>`:'<span class="dash">—</span>'}</td>
+    <td class="td-type"><span class="type-pill ${c.type}">${c.type==='bug'?'Bug':'Feature'}</span></td>
+    <td class="td-priority" style="color:${p.color}">${p.label.replace(' priority','')}</td>
+    <td class="td-status" style="color:${s.color}">${s.label}${c.status==='blocked'&&c.blocked?` (${escapeHtml(c.blocked)})`:''}</td>
+    <td class="td-owner">${c.owner?escapeHtml(c.owner):'<span class="dash">—</span>'}</td>
+    <td class="td-version">${c.status==='done'&&c.version?`
+      <span class="version-wrap">
+        <span class="version-badge" title="Click to view release notes">${escapeHtml(c.version)}</span>
+        <button type="button" class="version-info-btn" title="View release notes">ℹ</button>
+      </span>
+      <div class="release-notes" id="tbl-rn-${c.id}">${escapeHtml(c.notes||'No release notes yet.')}</div>
+    `:'<span class="dash">—</span>'}</td>
     ${view.showTime ? `<td class="meta-time">${fmtDate(c.createdAt)}</td><td class="meta-time">${fmtDate(c.updatedAt)}</td>` : ''}
     <td class="row-actions"></td>
   `;
   tr.querySelector('.row-title').addEventListener('click', ()=> openModal(c.id));
+
+  const tdType = tr.querySelector('.td-type');
+  if(tdType){ tdType.classList.add('has-ctx-menu'); tdType.addEventListener('contextmenu', e=> showContextMenu(e, c, 'type')); }
+
+  const tdPri = tr.querySelector('.td-priority');
+  if(tdPri){ tdPri.classList.add('has-ctx-menu'); tdPri.addEventListener('contextmenu', e=> showContextMenu(e, c, 'priority')); }
+
+  const tdStat = tr.querySelector('.td-status');
+  if(tdStat){ tdStat.classList.add('has-ctx-menu'); tdStat.addEventListener('contextmenu', e=> showContextMenu(e, c, 'status')); }
+
+  const tdOwner = tr.querySelector('.td-owner');
+  if(tdOwner){ tdOwner.classList.add('has-ctx-menu'); tdOwner.addEventListener('contextmenu', e=> showContextMenu(e, c, 'owner')); }
+
+  const tdVer = tr.querySelector('.td-version');
+  if(tdVer){
+    tdVer.classList.add('has-ctx-menu');
+    tdVer.addEventListener('contextmenu', e=> showContextMenu(e, c, 'version'));
+    const badge = tdVer.querySelector('.version-badge');
+    const infoBtn = tdVer.querySelector('.version-info-btn');
+    if(badge) badge.addEventListener('click', e=>{ e.stopPropagation(); toggleReleaseNotes(c.id); });
+    if(infoBtn) infoBtn.addEventListener('click', e=>{ e.stopPropagation(); toggleReleaseNotes(c.id); });
+  }
+
   const actions = tr.querySelector('.row-actions');
   const archBtn = document.createElement('button');
   archBtn.className='btn icon small';
@@ -922,7 +1201,11 @@ function renderTableRow(c, path, leafList){
     const delBtn = document.createElement('button');
     delBtn.className='btn icon small danger';
     delBtn.textContent='Delete';
-    delBtn.onclick = async ()=>{ cards = cards.filter(x=>x.id!==c.id); await persistCards(); render(); };
+    delBtn.onclick = async ()=>{
+      if(!confirm(`Are you sure you want to permanently delete "${c.title}" (${c.id})?`)) return;
+      cards = cards.filter(x=>x.id!==c.id);
+      await persistCards(); render();
+    };
     actions.appendChild(delBtn);
   }
   tr.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', c.id); tr.classList.add('dragging'); });
@@ -1047,7 +1330,9 @@ document.getElementById('restoreBtn').onclick = async ()=>{
 };
 document.getElementById('deleteBtn').onclick = async ()=>{
   if(!editingId) return;
-  cards = cards.filter(c=>c.id!==editingId);
+  const c = cards.find(x=>x.id===editingId);
+  if(c && !confirm(`Are you sure you want to permanently delete "${c.title}" (${c.id})?`)) return;
+  cards = cards.filter(x=>x.id!==editingId);
   await persistCards(); closeModal(); render();
 };
 
@@ -1134,6 +1419,81 @@ document.getElementById('exJsonBtn').onclick = ()=>{
   showIoStatus('Downloaded JSON example');
 };
 document.getElementById('chooseFileBtn').onclick = ()=> document.getElementById('importFile').click();
+
+let pendingImportData = null;
+
+function openImportPreviewModal(addedRows, updatedRows, unchangedCount, totalRows){
+  const summaryEl = document.getElementById('importPreviewSummary');
+  summaryEl.textContent = `Total file rows: ${totalRows} | New items: ${addedRows.length} | Updated items: ${updatedRows.length} | Unchanged: ${unchangedCount}`;
+
+  const noticeEl = document.getElementById('importPreviewNotice');
+  const tbody = document.getElementById('importPreviewBody');
+  tbody.innerHTML = '';
+
+  const allChanges = [
+    ...addedRows.map(r=> ({type:'NEW', id: r.id, title: r.normalized.title, details: `New ${r.normalized.type} item`})),
+    ...updatedRows.map(r=> ({type:'UPDATE', id: r.existing.id, title: r.normalized.title, details: `Changed: ${r.changes.join(', ')}`}))
+  ];
+
+  const PREVIEW_LIMIT = 15;
+  if(allChanges.length > PREVIEW_LIMIT){
+    noticeEl.style.display = 'block';
+    noticeEl.textContent = `⚡ Showing first ${PREVIEW_LIMIT} of ${allChanges.length} changes to optimize performance. All ${allChanges.length} changes will be applied upon confirmation.`;
+  } else {
+    noticeEl.style.display = 'none';
+  }
+
+  const previewList = allChanges.slice(0, PREVIEW_LIMIT);
+  previewList.forEach(item=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="padding:6px 8px;"><span class="type-pill ${item.type==='NEW'?'feature':'bug'}">${item.type}</span></td>
+      <td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px;">${escapeHtml(item.id)}</td>
+      <td style="padding:6px 8px;font-weight:600;">${escapeHtml(item.title)}</td>
+      <td style="padding:6px 8px;color:var(--text-dim);font-size:11px;">${escapeHtml(item.details)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('importPreviewOverlay').classList.add('open');
+}
+
+document.getElementById('importCancelBtn').onclick = ()=>{
+  document.getElementById('importPreviewOverlay').classList.remove('open');
+  if(pendingImportData && pendingImportData.fileInput) pendingImportData.fileInput.value = '';
+  pendingImportData = null;
+};
+
+document.getElementById('importConfirmBtn').onclick = async ()=>{
+  if(!pendingImportData) return;
+  const { addedRows, updatedRows, fileInput } = pendingImportData;
+  let added = 0, updated = 0;
+  const ts = nowISO();
+
+  updatedRows.forEach(({ existing, normalized })=>{
+    Object.assign(existing, normalized, {updatedAt: ts});
+    if(normalized.owner && !owners.includes(normalized.owner)) owners.push(normalized.owner);
+    updated++;
+  });
+
+  addedRows.forEach(({ id, normalized })=>{
+    cards.push({id, ...normalized, createdAt: normalized.createdAt || ts, updatedAt: normalized.updatedAt || ts});
+    if(normalized.owner && !owners.includes(normalized.owner)) owners.push(normalized.owner);
+    added++;
+  });
+
+  bumpNextNum();
+  await persistCards();
+  await persistOwners();
+  reconcileVersionFilter();
+  buildControls();
+  render();
+  showIoStatus(`Imported: ${added} added, ${updated} updated`);
+  document.getElementById('importPreviewOverlay').classList.remove('open');
+  if(fileInput) fileInput.value = '';
+  pendingImportData = null;
+};
+
 document.getElementById('importFile').onchange = async (e)=>{
   const file = e.target.files[0];
   if(!file) return;
@@ -1149,8 +1509,13 @@ document.getElementById('importFile').onchange = async (e)=>{
     }
   }catch(err){ showIoStatus('Import failed: could not parse file'); e.target.value=''; return; }
 
-  let added=0, updated=0;
+  if(!rows.length){ showIoStatus('Import failed: file is empty'); e.target.value=''; return; }
+
   const ts = nowISO();
+  let addedRows = [];
+  let updatedRows = [];
+  let unchangedCount = 0;
+
   rows.forEach(r=>{
     if(!r || (!r.title && !r.id)) return;
     const normalized = {
@@ -1165,26 +1530,35 @@ document.getElementById('importFile').onchange = async (e)=>{
       notes: r.notes || '',
       archived: r.archived===true || r.archived==='true',
       order: r.order!==undefined && r.order!=='' ? parseFloat(r.order) : 0,
+      createdAt: r.createdAt || ts,
+      updatedAt: r.updatedAt || ts,
     };
     let existing = r.id ? cards.find(c=>c.id===r.id) : null;
     if(existing){
-      Object.assign(existing, normalized, {updatedAt: r.updatedAt || ts});
-      updated++;
+      let changes = [];
+      ['title','type','priority','status','owner','blocked','version','notes','archived'].forEach(k=>{
+        if(String(existing[k]||'') !== String(normalized[k]||'')) changes.push(k);
+      });
+      if(changes.length > 0){
+        updatedRows.push({ existing, normalized, changes });
+      } else {
+        unchangedCount++;
+      }
     } else {
       const id = (r.id && String(r.id).trim()) ? String(r.id).trim() : nextId(normalized.type);
-      cards.push({id, ...normalized, createdAt: r.createdAt || ts, updatedAt: r.updatedAt || ts});
-      added++;
+      addedRows.push({ id, normalized });
     }
-    if(normalized.owner && !owners.includes(normalized.owner)) owners.push(normalized.owner);
   });
-  bumpNextNum();
-  await persistCards();
-  await persistOwners();
-  reconcileVersionFilter();
-  buildControls();
-  render();
-  showIoStatus(`Imported: ${added} added, ${updated} updated`);
-  e.target.value = '';
+
+  const totalChanges = addedRows.length + updatedRows.length;
+  if(totalChanges === 0 && unchangedCount > 0){
+    showIoStatus(`Import preview: All ${unchangedCount} items in file are identical to existing items.`);
+    e.target.value = '';
+    return;
+  }
+
+  pendingImportData = { addedRows, updatedRows, totalRows: rows.length, fileInput: e.target };
+  openImportPreviewModal(addedRows, updatedRows, unchangedCount, rows.length);
 };
 
 loadAll();
