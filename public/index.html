@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dominus 4D Project Board</title>
 <meta name="description" content="Dominus 4D Project Board - Feature & Bug Tracker"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -197,6 +198,17 @@
   ::-webkit-scrollbar{height:8px;width:8px;}
   ::-webkit-scrollbar-thumb{background:#2d3140;border-radius:4px;}
   ::-webkit-scrollbar-track{background:transparent;}
+
+  @media (max-width: 640px) {
+    .app { padding: 12px 12px 32px; }
+    .topbar { flex-direction: column; align-items: stretch; gap: 10px; }
+    .deck-row { gap: 8px; }
+    .card { width: 100%; max-width: 100%; }
+    .node-children { padding-left: 10px; }
+    .modal { padding: 16px; max-width: 100%; }
+    .row2 { grid-template-columns: 1fr; }
+    .table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  }
 </style>
 </head>
 <body>
