@@ -537,7 +537,7 @@ function buildControls(){
 
   buildSortChips();
   seg(document.getElementById('themeSeg'), [['light','Light'],['dark','Dark'],['system','System']], view.theme, v=>{ view.theme=v; persistView(); applyTheme(); buildControls(); });
-  seg(document.getElementById('archiveSeg'), [['active','Active'],['archived','Archived'],['all','All']], view.archiveFilter, v=>{ view.archiveFilter=v; persistView(); resetPage(); render(); });
+  seg(document.getElementById('archiveSeg'), [['active','Active'],['archived','Archived'],['all','All']], view.archiveFilter, v=>{ view.archiveFilter=v; persistView(); resetPage(); buildControls(); render(); });
   document.getElementById('timeToggle').checked = view.showTime;
 
   buildFilterColumn('filterType','Type',[
