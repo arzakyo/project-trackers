@@ -1,0 +1,1824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dominus 4D Project Board</title>
+<meta name="description" content="Dominus 4D Project Board - Feature & Bug Tracker"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg:#12141a; --panel:#1a1d26; --panel-2:#20232f; --panel-3:#262a38;
+    --border:#2a2e3c; --border-soft:#232735;
+    --text:#e8eaf0; --text-dim:#9296a8; --text-faint:#5c6070;
+    --accent-idea:#7c8296; --accent-planned:#60a5fa; --accent-progress:#5eead4;
+    --accent-staging:#c084fc; --accent-blocked:#fbbf24; --accent-done:#34d399;
+    --pri-high:#fb7185; --pri-med:#fbbf24; --pri-low:#5c6070;
+    --feature:#34d399; --bug:#fb7185; --version:#93c5fd;
+    font-family:'Space Grotesk', sans-serif;
+  }
+  body[data-theme="light"]{
+    --bg:#f4f5f8; --panel:#ffffff; --panel-2:#f0f1f5; --panel-3:#e7e9f0;
+    --border:#dde0e9; --border-soft:#e7e9f0;
+    --text:#1b1e28; --text-dim:#565b6d; --text-faint:#8b90a3;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:transparent;color:var(--text);}
+  body{background:var(--bg);}
+  .app{padding:20px 20px 44px;}
+
+  .topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px;}
+  .brand-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);margin:0 0 4px;}
+  .brand-title{font-size:22px;font-weight:700;margin:0;letter-spacing:-.01em;}
+  .brand-desc{font-size:12px;color:var(--text-dim);margin:3px 0 0;}
+  select,input,textarea,button{font-family:inherit;}
+  .item-count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);margin:0 0 14px;}
+
+  .btn{background:var(--panel-2);color:var(--text);border:1px solid var(--border);padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;transition:border-color .15s,background .15s;white-space:nowrap;}
+  .btn:hover{border-color:#3a3f52;background:var(--panel-3);}
+  .btn.primary{background:var(--accent-progress);color:#0b1512;border-color:var(--accent-progress);}
+  .btn.primary:hover{filter:brightness(1.08);}
+  .btn.active{background:var(--text);color:var(--bg);border-color:var(--text);}
+  .btn.small{padding:5px 10px;font-size:11.5px;}
+  .btn.icon{padding:5px 9px;font-size:12px;}
+  .btn.danger{color:var(--pri-high);background:transparent;border-color:rgba(251,113,133,.35);}
+  .btn.danger:hover{background:rgba(251,113,133,.08);}
+  .btn[disabled]{opacity:.4;cursor:not-allowed;}
+
+  .deck{background:var(--panel);border:1px solid var(--border-soft);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;flex-direction:column;gap:10px;}
+  .deck-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .deck-row + .deck-row{border-top:1px solid var(--border-soft);padding-top:10px;}
+  .deck-label{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);}
+  .seg{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+  .seg button{border:none;border-radius:0;}
+  .seg button:not(:last-child){border-right:1px solid var(--border);}
+  .toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);cursor:pointer;user-select:none;}
+  .toggle input{accent-color:var(--accent-progress);width:14px;height:14px;}
+  .spacer{flex:1;}
+  .hidden{display:none !important;}
+
+  .sort-chip{display:flex;align-items:center;gap:5px;background:var(--panel-2);border:1px solid var(--border);border-radius:999px;padding:4px 6px 4px 10px;font-size:11.5px;color:var(--text-dim);}
+  .sort-chip button{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:11px;padding:2px 4px;font-family:inherit;}
+  .sort-chip button:hover{color:var(--text);}
+  .sort-chip .arrow{color:var(--accent-progress);font-weight:700;}
+  #addSortField{background:var(--panel-2);color:var(--text-dim);border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:11.5px;}
+
+  .filter-panel,.import-panel{display:none;gap:18px;flex-wrap:wrap;border-top:1px solid var(--border-soft);padding-top:10px;}
+  .filter-panel.open,.import-panel.open{display:flex;}
+  .filter-col{min-width:150px;}
+  .filter-col-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .filter-col-title{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);}
+  .filter-quick{font-size:10px;color:var(--text-faint);cursor:pointer;text-decoration:underline;}
+  .filter-check{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);margin-bottom:4px;cursor:pointer;}
+  .filter-check input{accent-color:var(--accent-progress);}
+  .filter-check .sw{width:7px;height:7px;border-radius:50%;flex:0 0 auto;}
+
+  .import-panel{flex-direction:column;align-items:flex-start;gap:10px;}
+  .import-panel p{font-size:12px;color:var(--text-dim);margin:0;}
+  .import-panel .dl-row{display:flex;gap:8px;flex-wrap:wrap;}
+
+  .io-status{font-size:11px;color:var(--accent-progress);font-family:'IBM Plex Mono',monospace;}
+
+  /* tree (card view) */
+  .node{margin-bottom:6px;}
+  .node-head{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:9px;background:var(--panel);border:1px solid var(--border-soft);border-left:3px solid var(--nodecolor);cursor:pointer;transition:box-shadow .1s,background .1s;}
+  .node-head:hover{background:var(--panel-2);}
+  .node-head.drop-target-active{box-shadow:0 0 0 2px var(--accent-progress) inset;background:rgba(94,234,212,.08);}
+  .chevron{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);width:10px;flex:0 0 auto;transition:transform 100ms ease-in-out;}
+  .chevron.collapsed{transform:rotate(-90deg);}
+  .node-label{font-size:13px;font-weight:700;}
+  .node-count{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--text-faint);background:var(--panel-2);padding:1px 8px;border-radius:999px;}
+  .node-children{display:grid;grid-template-rows:1fr;transition:grid-template-rows 100ms ease-in-out, opacity 100ms ease-in-out, margin-top 100ms ease-in-out;opacity:1;margin-top:6px;padding-left:20px;}
+  .node-children-inner{overflow:hidden;}
+  .node-children.collapsed{grid-template-rows:0fr;opacity:0;margin-top:0;pointer-events:none;}
+
+  .leaf{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 2px;border-radius:8px;transition:background .15s, outline .15s;}
+  .leaf.drag-over{background:rgba(94,234,212,.08);outline:2px dashed var(--accent-progress);outline-offset:-2px;}
+  .leaf-empty{color:var(--text-faint);font-size:11.5px;font-family:'IBM Plex Mono',monospace;padding:8px 0;}
+
+  .card{background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:0;cursor:grab;width:210px;flex:0 0 auto;display:flex;flex-direction:column;gap:0;transition:box-shadow .1s, border-color .1s, opacity .1s;}
+  .card:active{cursor:grabbing;}
+  .card.dragging{opacity:.35;}
+  .card.archived{opacity:.55;}
+  .card.drag-insert-before{box-shadow:inset 4px 0 0 var(--accent-progress), 0 0 10px rgba(94,234,212,.2);border-color:var(--accent-progress);}
+  .card.drag-insert-after{box-shadow:inset -4px 0 0 var(--accent-progress), 0 0 10px rgba(94,234,212,.2);border-color:var(--accent-progress);}
+  .card-inner{padding:10px 11px 9px;display:flex;flex-direction:column;gap:6px;}
+  .card-header{cursor:grab;padding:2px 2px 4px;margin:-2px -2px 2px;border-radius:6px;}
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
+  .type-pill{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:4px;white-space:nowrap;}
+  .type-pill.feature{color:var(--feature);background:rgba(52,211,153,.12);}
+  .type-pill.bug{color:var(--bug);background:rgba(251,113,133,.12);}
+  .card-id{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text-faint);}
+  .card-title{font-size:12.5px;font-weight:600;line-height:1.35;margin:0;cursor:pointer;}
+  .card-desc{font-size:11px;color:var(--text-dim);line-height:1.4;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .track{display:flex;gap:3px;}
+  .track-dot{flex:1;height:5px;border-radius:3px;background:var(--border);cursor:pointer;}
+  .track-dot.filled{background:var(--dotcolor);}
+  .track-dot:hover{filter:brightness(1.3);}
+  .status-label{font-size:9.5px;font-family:'IBM Plex Mono',monospace;color:var(--statuscolor);display:flex;align-items:center;gap:5px;}
+  .status-label .sw{width:6px;height:6px;border-radius:50%;background:var(--statuscolor);}
+  .card-foot{display:flex;justify-content:space-between;align-items:center;gap:6px;}
+  .owner-tag{font-size:10px;color:var(--text-dim);}
+  .blocked-note{font-size:9.5px;color:var(--accent-blocked);font-family:'IBM Plex Mono',monospace;}
+  .version-wrap{display:inline-flex;align-items:center;gap:4px;align-self:flex-start;}
+  .version-badge{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--version);background:rgba(147,197,253,.12);padding:1px 7px;border-radius:5px;cursor:pointer;align-self:flex-start;}
+  .version-info-btn{background:rgba(147,197,253,.14);color:var(--version);border:1px solid rgba(147,197,253,.25);border-radius:4px;width:17px;height:17px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;padding:0;line-height:1;transition:background .15s, border-color .15s;}
+  .version-info-btn:hover{background:rgba(147,197,253,.3);border-color:var(--version);}
+  .release-notes{font-size:10.5px;color:var(--text-dim);background:var(--panel);border:1px solid var(--border-soft);border-radius:6px;padding:6px 8px;line-height:1.4;display:none;margin-top:4px;}
+  .release-notes.open{display:block;}
+  .meta-time{font-size:9px;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;}
+  .archived-tag{font-size:9px;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;border:1px solid var(--border);padding:0 5px;border-radius:4px;align-self:flex-start;}
+  .has-ctx-menu{cursor:context-menu;}
+
+  /* context menu */
+  .context-menu{position:fixed;z-index:200;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.45);padding:6px;min-width:180px;max-width:280px;display:none;flex-direction:column;gap:2px;}
+  .context-menu.open{display:flex;}
+  .context-menu-header{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;color:var(--text-faint);padding:4px 8px;border-bottom:1px solid var(--border-soft);margin-bottom:2px;letter-spacing:.05em;}
+  .context-menu-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;font-size:12px;color:var(--text);cursor:pointer;background:none;border:none;width:100%;text-align:left;font-family:inherit;transition:background .1s;}
+  .context-menu-item:hover{background:var(--panel-2);}
+  .context-menu-item.active{font-weight:600;color:var(--accent-progress);}
+  .context-menu-divider{height:1px;background:var(--border-soft);margin:3px 0;}
+
+  #importPreviewTable td,#importPreviewTable th{border-bottom:1px solid var(--border-soft);}
+
+  /* table view */
+  .table-wrap{overflow-x:auto;border:1px solid var(--border-soft);border-radius:12px;}
+  table.roadmap-table{width:100%;border-collapse:collapse;font-size:12.5px;background:var(--panel);}
+  table.roadmap-table th{position:sticky;top:0;background:var(--panel-2);text-align:left;padding:9px 10px;font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);cursor:pointer;white-space:nowrap;border-bottom:1px solid var(--border-soft);}
+  table.roadmap-table th:hover{color:var(--text-dim);}
+  table.roadmap-table th.sorted{color:var(--accent-progress);}
+  table.roadmap-table td{padding:8px 10px;border-bottom:1px solid var(--border-soft);vertical-align:top;}
+  table.roadmap-table tr.drag-row, table.roadmap-table tr.group-row{cursor:grab;transition:opacity 100ms ease-in-out, background 100ms ease-in-out;opacity:1;}
+  table.roadmap-table td{padding:8px 10px;border-bottom:1px solid var(--border-soft);vertical-align:middle;transition:padding 100ms ease-in-out, line-height 100ms ease-in-out, font-size 100ms ease-in-out, opacity 100ms ease-in-out, border-width 100ms ease-in-out;}
+  table.roadmap-table td *{transition:font-size 100ms ease-in-out, opacity 100ms ease-in-out, margin 100ms ease-in-out, padding 100ms ease-in-out, max-height 100ms ease-in-out;}
+
+  table.roadmap-table tr.row-collapsing td{padding-top:0 !important;padding-bottom:0 !important;line-height:0 !important;font-size:0 !important;opacity:0 !important;border-bottom-width:0 !important;}
+  table.roadmap-table tr.row-collapsing td *{opacity:0 !important;font-size:0 !important;max-height:0 !important;margin-top:0 !important;margin-bottom:0 !important;padding-top:0 !important;padding-bottom:0 !important;}
+
+  table.roadmap-table tr.row-expanding td{padding-top:0 !important;padding-bottom:0 !important;line-height:0 !important;font-size:0 !important;opacity:0 !important;border-bottom-width:0 !important;}
+  table.roadmap-table tr.row-expanding td *{opacity:0 !important;font-size:0 !important;max-height:0 !important;margin-top:0 !important;margin-bottom:0 !important;padding-top:0 !important;padding-bottom:0 !important;}
+
+  tr.group-collapsed-hidden{display:none !important;}
+  table.roadmap-table tr.dragging{opacity:.4;}
+  table.roadmap-table tr.archived-row{opacity:.55;}
+  table.roadmap-table tr:hover td{background:var(--panel-2);}
+  table.roadmap-table tr.drag-insert-before td{box-shadow:inset 0 2px 0 var(--accent-progress);}
+  table.roadmap-table tr.drag-insert-after td{box-shadow:inset 0 -2px 0 var(--accent-progress);}
+  tr.group-row td{background:var(--panel-2);font-weight:700;font-size:12px;cursor:pointer;border-left:3px solid var(--nodecolor);padding:8px 10px;transition:background 100ms ease-in-out;}
+  tr.group-row.drop-target-active td{box-shadow:inset 0 0 0 2px var(--accent-progress);}
+  tr.group-row .node-count{margin-left:8px;}
+  .drag-handle{color:var(--text-faint);font-family:'IBM Plex Mono',monospace;cursor:grab;}
+  .row-title{font-weight:600;cursor:pointer;}
+  .row-desc{color:var(--text-dim);font-size:11px;max-width:260px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .table-empty{padding:24px;text-align:center;color:var(--text-faint);font-size:12px;font-family:'IBM Plex Mono',monospace;}
+  .row-actions{display:flex;gap:5px;}
+  .dash{color:var(--text-faint);}
+
+  .pager{display:flex;align-items:center;gap:10px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap;}
+  .pager-info{font-size:11.5px;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;}
+
+  .overlay{position:fixed;inset:0;background:rgba(6,7,10,.65);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:50;padding:16px;}
+  .overlay.open{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;width:100%;max-width:420px;padding:20px;max-height:90vh;overflow-y:auto;}
+  .modal h3{margin:0 0 14px;font-size:16px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px;font-family:'IBM Plex Mono',monospace;letter-spacing:.03em;text-transform:uppercase;}
+  .field input[type=text],.field textarea,.field select{width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:7px;font-size:13px;resize:vertical;}
+  .field textarea{min-height:56px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:8px;flex-wrap:wrap;}
+  .modal-actions .left,.modal-actions .right{display:flex;gap:8px;flex-wrap:wrap;}
+  .modal-meta{font-size:10.5px;color:var(--text-faint);font-family:'IBM Plex Mono',monospace;margin-top:-4px;margin-bottom:12px;}
+  .owner-row{display:flex;justify-content:space-between;align-items:center;padding:6px 2px;border-bottom:1px solid var(--border-soft);font-size:12.5px;}
+  .owner-row button{background:none;border:none;color:var(--pri-high);cursor:pointer;font-size:11px;}
+  .owners-empty{font-size:12px;color:var(--text-faint);padding:8px 0;}
+
+  ::-webkit-scrollbar{height:8px;width:8px;}
+  ::-webkit-scrollbar-thumb{background:#2d3140;border-radius:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div>
+      <p class="brand-eyebrow">Dominus 4D</p>
+      <h1 class="brand-title">Project Board</h1>
+      <p class="brand-desc">Feature & Bug Tracker</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <span class="io-status" id="ioStatus"></span>
+      <button class="btn small" id="ownersBtn">Owners</button>
+      <button class="btn small" id="importToggleBtn">Import / Export</button>
+      <input type="file" id="importFile" accept=".csv,.json" class="hidden">
+      <button class="btn primary" id="addBtn">+ Add item</button>
+    </div>
+  </div>
+  <p class="item-count" id="itemCount"></p>
+
+  <div class="deck">
+    <div class="deck-row import-panel" id="importPanel">
+      <p>Download a template (empty, just headers) or an example (filled in) to see the expected columns, then use "Choose file" to import your own.</p>
+      <div class="dl-row">
+        <button class="btn small" id="tplCsvBtn">Template — CSV</button>
+        <button class="btn small" id="exCsvBtn">Example — CSV</button>
+        <button class="btn small" id="tplJsonBtn">Template — JSON</button>
+        <button class="btn small" id="exJsonBtn">Example — JSON</button>
+      </div>
+      <div class="dl-row">
+        <button class="btn small" id="chooseFileBtn">Choose file to import&hellip;</button>
+        <button class="btn small" id="exportCsvBtn">Export current — CSV</button>
+        <button class="btn small" id="exportJsonBtn">Export current — JSON</button>
+      </div>
+    </div>
+    <div class="deck-row">
+      <span class="deck-label">View</span>
+      <div class="seg" id="viewSeg"></div>
+      <span class="deck-label">Group by</span>
+      <div class="seg" id="primarySeg"></div>
+      <label class="toggle" id="subGroupWrap"><input type="checkbox" id="subGroupToggle"><span id="subGroupLabel">split by status</span></label>
+      <label class="toggle" id="versionGroupWrap"><input type="checkbox" id="versionGroupToggle"><span>split by release version</span></label>
+      <div class="spacer"></div>
+      <button class="btn small" id="expandAllBtn">Expand all</button>
+      <button class="btn small" id="collapseAllBtn">Collapse all</button>
+    </div>
+    <div class="deck-row">
+      <span class="deck-label">Sort by</span>
+      <div id="sortChips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      <select id="addSortField"><option value="">+ Add sort field&hellip;</option></select>
+      <div class="spacer"></div>
+      <span class="deck-label">Theme</span>
+      <div class="seg" id="themeSeg"></div>
+    </div>
+    <div class="deck-row">
+      <span class="deck-label">Show</span>
+      <div class="seg" id="archiveSeg"></div>
+      <label class="toggle"><input type="checkbox" id="timeToggle"><span>timestamps</span></label>
+      <div class="spacer"></div>
+      <button class="btn small" id="filterToggleBtn">Filters</button>
+    </div>
+    <div class="deck-row filter-panel" id="filterPanel">
+      <div class="filter-col" id="filterType"></div>
+      <div class="filter-col" id="filterPriority"></div>
+      <div class="filter-col" id="filterStatus"></div>
+      <div class="filter-col" id="filterVersion"></div>
+    </div>
+  </div>
+
+  <div id="cardView"><div id="tree"></div></div>
+  <div id="tableView" class="hidden">
+    <div class="table-wrap"><table class="roadmap-table"><thead><tr id="tableHead"></tr></thead><tbody id="tableBody"></tbody></table></div>
+    <div class="pager hidden" id="pager">
+      <span class="pager-info" id="pagerInfo"></span>
+      <div class="seg" id="pageSizeSeg"></div>
+      <button class="btn small" id="prevPageBtn">&larr; Prev</button>
+      <button class="btn small" id="nextPageBtn">Next &rarr;</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="modalTitle">New item</h3>
+    <p class="modal-meta hidden" id="modalMeta"></p>
+    <div class="field"><label>Title</label><input type="text" id="f-title" placeholder="e.g. Block user by username"></div>
+    <div class="field"><label>Description</label><textarea id="f-desc" placeholder="What is this, and why does it matter?"></textarea></div>
+    <div class="row2">
+      <div class="field"><label>Type</label>
+        <select id="f-type"><option value="feature">Feature</option><option value="bug">Bug fix</option></select>
+      </div>
+      <div class="field"><label>Priority</label>
+        <select id="f-priority"><option value="high">High</option><option value="med">Medium</option><option value="low">Low</option></select>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Status</label><select id="f-status"></select></div>
+      <div class="field"><label>Owner</label><input type="text" id="f-owner" list="ownersDatalist" placeholder="Who's on this?"><datalist id="ownersDatalist"></datalist></div>
+    </div>
+    <div class="field" id="blockedWrap" style="display:none;">
+      <label>Blocked by</label>
+      <select id="f-blocked">
+        <option value="">Select a reason&hellip;</option>
+        <option value="API">API</option><option value="Design">Design</option>
+        <option value="Third-party PG">Third-party PG</option>
+        <option value="Third-party game provider">Third-party game provider</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="row2" id="versionWrap" style="display:none;">
+      <div class="field"><label>Version</label><input type="text" id="f-version" placeholder="v1.2.0"></div>
+    </div>
+    <div class="field" id="notesWrap" style="display:none;">
+      <label>Release notes</label>
+      <textarea id="f-notes" placeholder="What shipped, for anyone hovering the version tag"></textarea>
+    </div>
+    <div class="modal-actions">
+      <div class="left">
+        <button class="btn small" id="archiveBtn" style="display:none;">Archive</button>
+        <button class="btn small" id="restoreBtn" style="display:none;">Restore</button>
+        <button class="btn danger small" id="deleteBtn" style="display:none;">Delete permanently</button>
+      </div>
+      <div class="right">
+        <button class="btn small" id="cancelBtn">Cancel</button>
+        <button class="btn primary small" id="saveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="ownersOverlay">
+  <div class="modal">
+    <h3>Manage owners</h3>
+    <div id="ownersListEl"></div>
+    <div class="row2" style="margin-top:12px;">
+      <input type="text" id="newOwnerInput" placeholder="Add owner name">
+      <button class="btn small" id="addOwnerBtn">Add owner</button>
+    </div>
+    <p style="font-size:11px;color:var(--text-faint);margin-top:8px;">Removing an owner from this list won't change items already assigned to them.</p>
+    <div class="modal-actions"><div class="right"><button class="btn small" id="closeOwnersBtn">Close</button></div></div>
+  </div>
+</div>
+
+<div class="context-menu" id="contextMenu"></div>
+
+<div class="overlay" id="importPreviewOverlay">
+  <div class="modal" style="max-width:640px;">
+    <h3>Import Preview</h3>
+    <p style="font-size:12px;color:var(--text-dim);margin:-4px 0 12px;" id="importPreviewSummary"></p>
+    <div id="importPreviewNotice" style="font-size:11.5px;color:var(--pri-med);font-family:'IBM Plex Mono',monospace;margin-bottom:8px;display:none;background:rgba(251,191,36,.08);padding:8px;border-radius:6px;border:1px solid rgba(251,191,36,.25);"></div>
+    <div style="max-height:320px;overflow-y:auto;border:1px solid var(--border-soft);border-radius:8px;margin-bottom:14px;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;" id="importPreviewTable">
+        <thead>
+          <tr style="background:var(--panel-2);text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;color:var(--text-faint);">
+            <th style="padding:7px 10px;">Status</th>
+            <th style="padding:7px 10px;">ID</th>
+            <th style="padding:7px 10px;">Title</th>
+            <th style="padding:7px 10px;">Details</th>
+          </tr>
+        </thead>
+        <tbody id="importPreviewBody"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <div class="left"><button class="btn small" id="importCancelBtn">Cancel</button></div>
+      <div class="right"><button class="btn primary small" id="importConfirmBtn">Confirm Import</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="promptOverlay" style="z-index:100;">
+  <div class="modal" style="max-width:380px;">
+    <h3 id="promptTitle">Input Required</h3>
+    <p id="promptMessage" style="font-size:12px;color:var(--text-dim);margin:-4px 0 12px;line-height:1.4;"></p>
+    <div class="field">
+      <input type="text" id="promptInput" value="" autocomplete="off">
+      <textarea id="promptTextarea" class="hidden" style="min-height:70px;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <div class="left"></div>
+      <div class="right">
+        <button class="btn small" id="promptCancelBtn">Cancel</button>
+        <button class="btn primary small" id="promptOkBtn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="confirmOverlay" style="z-index:100;">
+  <div class="modal" style="max-width:380px;">
+    <h3 id="confirmTitle">Confirm Action</h3>
+    <p id="confirmMessage" style="font-size:13px;color:var(--text);margin:-4px 0 16px;line-height:1.45;"></p>
+    <div class="modal-actions">
+      <div class="left"></div>
+      <div class="right">
+        <button class="btn small" id="confirmCancelBtn">Cancel</button>
+        <button class="btn danger small" id="confirmOkBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STATUSES = [
+  {key:'idea',label:'Idea',color:'var(--accent-idea)'},
+  {key:'planned',label:'Planned',color:'var(--accent-planned)'},
+  {key:'progress',label:'In Progress',color:'var(--accent-progress)'},
+  {key:'blocked',label:'Blocked',color:'var(--accent-blocked)'},
+  {key:'staging',label:'In Staging',color:'var(--accent-staging)'},
+  {key:'done',label:'Done / Live',color:'var(--accent-done)'},
+];
+const STATUS_INDEX = Object.fromEntries(STATUSES.map((s,i)=>[s.key,i]));
+const PRIORITIES = [
+  {key:'high',label:'High priority',color:'var(--pri-high)'},
+  {key:'med',label:'Medium priority',color:'var(--pri-med)'},
+  {key:'low',label:'Low priority',color:'var(--pri-low)'},
+];
+const PRIORITY_INDEX = Object.fromEntries(PRIORITIES.map((p,i)=>[p.key,i]));
+const PRI_SHORT = {high:'High',med:'Med',low:'Low'};
+const SORT_FIELDS = [
+  {key:'priority',label:'Priority'},
+  {key:'status',label:'Status'},
+  {key:'title',label:'Title'},
+  {key:'type',label:'Type'},
+  {key:'owner',label:'Owner'},
+  {key:'version',label:'Version'},
+];
+
+const SEED = [
+  {id:'F-001',type:'feature',title:'Dashboard summary widget',desc:'Show total users, total registered, currently logged in, currently playing in-game.',priority:'high',status:'planned',owner:'Tim IT Dominus4d',blocked:'',version:'',notes:'',archived:false,order:0},
+  {id:'F-002',type:'feature',title:'Dashboard hover/click explanations',desc:'Add explanation on hover/click for each dashboard summary metric.',priority:'med',status:'idea',owner:'Tim IT Dominus4d',blocked:'',version:'',notes:'',archived:false,order:10},
+  {id:'F-003',type:'feature',title:'Edit AMP settings',desc:'Admin panel must be able to edit AMP settings.',priority:'high',status:'planned',owner:'Tim IT Dominus4d',blocked:'',version:'',notes:'',archived:false,order:20},
+  {id:'F-004',type:'feature',title:'Edit SEO settings',desc:'Admin panel must be able to edit SEO settings.',priority:'med',status:'idea',owner:'Tim IT Dominus4d',blocked:'',version:'',notes:'',archived:false,order:30},
+  {id:'F-005',type:'feature',title:'Edit contact channels',desc:'Admin panel must be able to edit contacts (WhatsApp, Telegram, etc.).',priority:'med',status:'idea',owner:'Tim IT Dominus4d',blocked:'',version:'',notes:'',archived:false,order:40},
+  {id:'F-006',type:'feature',title:'Per-user detailed game history',desc:'Detailed game history per user including screenshot/replay of winning rounds.',priority:'med',status:'blocked',owner:'Tim IT Dominus4d',blocked:'Third-party game provider',version:'',notes:'',archived:false,order:50},
+  {id:'F-007',type:'feature',title:'Block user by username',desc:'Live chat: block-by-username feature.',priority:'high',status:'planned',owner:'Tim IT Live Chat',blocked:'',version:'',notes:'',archived:false,order:60},
+  {id:'F-008',type:'feature',title:'Chat user data panel',desc:'Show chat user data for logged-in users.',priority:'med',status:'idea',owner:'Tim IT Live Chat',blocked:'',version:'',notes:'',archived:false,order:70},
+  {id:'F-009',type:'feature',title:'Multi-message send delay',desc:'Allow multiple chat messages with a ~3 second delay between messages.',priority:'low',status:'idea',owner:'Tim IT Live Chat',blocked:'',version:'',notes:'',archived:false,order:80},
+  {id:'F-010',type:'feature',title:'Admin panel access provisioning',desc:'Share AMP settings example, game win history example, and email list for admin panel access.',priority:'high',status:'progress',owner:'Tim Nova',blocked:'',version:'',notes:'',archived:false,order:90},
+].map(c=>({...c, createdAt:'2026-08-06T00:00:00.000Z', updatedAt:'2026-08-06T00:00:00.000Z'}));
+
+const CARDS_KEY = 'roadmap-cards';
+const VIEW_KEY  = 'roadmap-explorer-view';
+const OWNERS_KEY = 'roadmap-owners';
+const CSV_COLS = ['id','type','title','desc','priority','status','owner','blocked','version','notes','archived','order','createdAt','updatedAt'];
+
+let cards = [];
+let owners = [];
+let editingId = null;
+let nextNum = 11;
+let collapsedCard = new Set();
+let collapsedTable = new Set();
+let knownBranchKeysCard = [];
+let knownBranchKeysTable = [];
+let dragOverInfo = null; // {leafKey, overCardId, pos}
+
+let view = {
+  view: 'card',
+  primary: 'priority', subGroup: true, versionGroup: false,
+  tablePrimary: 'none', tableSubGroup: false, tableVersionGroup: false,
+  sortRules: [{field:'priority', dir:'asc'}],
+  theme: 'system',
+  archiveFilter: 'active',
+  showTime: false,
+  pageSize: 50,
+  page: 1,
+  filters: { type:'all', priority:['high','med','low'], status: STATUSES.map(s=>s.key), version:['Unreleased'] }
+};
+
+function nowISO(){ return new Date().toISOString(); }
+function fmtDate(iso){ if(!iso) return ''; const d=new Date(iso); return isNaN(d) ? '' : d.toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function nextId(type){ const prefix = type==='bug'?'B':'F'; const id = `${prefix}-${String(nextNum).padStart(3,'0')}`; nextNum++; return id; }
+function bumpNextNum(){ nextNum = 1 + cards.reduce((m,c)=>{ const n=parseInt((c.id||'F-0').split('-')[1],10); return isNaN(n)?m:Math.max(m,n); },0); }
+function resetPage(){ view.page = 1; }
+
+/* ---------- load/save ---------- */
+async function loadAll(){
+  try{
+    const res = await window.storage.get(CARDS_KEY, true);
+    cards = (res && res.value) ? JSON.parse(res.value) : SEED.slice();
+    if(!res || !res.value) await persistCards();
+  }catch(e){ cards = SEED.slice(); try{ await persistCards(); }catch(e2){} }
+  cards.forEach(c=>{ if(c.archived===undefined) c.archived=false; if(c.order===undefined) c.order=0; });
+
+  try{
+    const vres = await window.storage.get(VIEW_KEY, false);
+    if(vres && vres.value){ view = Object.assign(view, JSON.parse(vres.value)); }
+    if(!view.sortRules || !view.sortRules.length) view.sortRules=[{field:'priority',dir:'asc'}];
+  }catch(e){}
+
+  try{
+    const ores = await window.storage.get(OWNERS_KEY, true);
+    owners = (ores && ores.value) ? JSON.parse(ores.value) : Array.from(new Set(cards.map(c=>c.owner).filter(Boolean)));
+    if(!ores || !ores.value) await persistOwners();
+  }catch(e){ owners = Array.from(new Set(cards.map(c=>c.owner).filter(Boolean))); }
+
+  bumpNextNum();
+  reconcileVersionFilter();
+  applyTheme();
+  buildControls();
+  render();
+}
+async function persistCards(){ try{ await window.storage.set(CARDS_KEY, JSON.stringify(cards), true); }catch(e){ console.error(e); } }
+async function persistView(){ try{ await window.storage.set(VIEW_KEY, JSON.stringify(view), false); }catch(e){ console.error(e); } }
+async function persistOwners(){ try{ await window.storage.set(OWNERS_KEY, JSON.stringify(owners), true); }catch(e){ console.error(e); } }
+
+function allVersions(){
+  const set = new Set(['Unreleased']);
+  cards.forEach(c=>{ if(c.version) set.add(c.version); });
+  return Array.from(set).sort((a,b)=>{
+    if(a==='Unreleased') return 1;
+    if(b==='Unreleased') return -1;
+    const pa=a.replace(/^v/i,'').split('.').map(Number);
+    const pb=b.replace(/^v/i,'').split('.').map(Number);
+    for(let i=0;i<Math.max(pa.length,pb.length);i++){ const d=(pb[i]||0)-(pa[i]||0); if(d) return d; }
+    return 0;
+  });
+}
+function reconcileVersionFilter(){
+  const versions = allVersions();
+  versions.forEach(v=>{ if(!view.filters.version.includes(v)) view.filters.version.push(v); });
+  view.filters.version = view.filters.version.filter(v=>versions.includes(v));
+}
+
+/* ---------- theme ---------- */
+function applyTheme(){
+  let effective = view.theme;
+  if(effective==='system'){
+    effective = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  document.body.setAttribute('data-theme', effective==='light' ? 'light':'dark');
+}
+if(window.matchMedia){
+  window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', ()=>{ if(view.theme==='system') applyTheme(); });
+}
+
+/* ---------- controls ---------- */
+function seg(container, options, currentVal, onPick){
+  container.innerHTML = '';
+  options.forEach(([val,label])=>{
+    const b = document.createElement('button');
+    b.type='button';
+    b.className = 'btn small' + (currentVal===val?' active':'');
+    b.textContent = label;
+    b.onclick = ()=> onPick(val);
+    container.appendChild(b);
+  });
+}
+
+function groupState(){
+  return view.view==='table'
+    ? {primaryKey:'tablePrimary', subKey:'tableSubGroup', verKey:'tableVersionGroup', allowNone:true}
+    : {primaryKey:'primary', subKey:'subGroup', verKey:'versionGroup', allowNone:false};
+}
+
+function buildControls(){
+  seg(document.getElementById('viewSeg'), [['card','Card'],['table','Table']], view.view, v=>{ view.view=v; persistView(); buildControls(); render(); });
+
+  const gs = groupState();
+  const primaryVal = view[gs.primaryKey];
+  const options = gs.allowNone ? [['none','None'],['priority','Priority'],['status','Status']] : [['priority','Priority'],['status','Status']];
+  seg(document.getElementById('primarySeg'), options, primaryVal, v=>{ view[gs.primaryKey]=v; persistView(); buildControls(); render(); });
+
+  const grouped = primaryVal!=='none';
+  document.getElementById('subGroupWrap').classList.toggle('hidden', !grouped);
+  document.getElementById('versionGroupWrap').classList.toggle('hidden', !grouped);
+  document.getElementById('expandAllBtn').classList.toggle('hidden', !grouped);
+  document.getElementById('collapseAllBtn').classList.toggle('hidden', !grouped);
+  document.getElementById('subGroupLabel').textContent = 'split by ' + (primaryVal==='priority'?'status':'priority');
+  document.getElementById('subGroupToggle').checked = view[gs.subKey];
+  document.getElementById('versionGroupToggle').checked = view[gs.verKey];
+
+  buildSortChips();
+  seg(document.getElementById('themeSeg'), [['light','Light'],['dark','Dark'],['system','System']], view.theme, v=>{ view.theme=v; persistView(); applyTheme(); buildControls(); });
+  seg(document.getElementById('archiveSeg'), [['active','Active'],['archived','Archived'],['all','All']], view.archiveFilter, v=>{ view.archiveFilter=v; persistView(); resetPage(); buildControls(); render(); });
+  document.getElementById('timeToggle').checked = view.showTime;
+
+  buildFilterColumn('filterType','Type',[
+    {key:'all',label:'All types',color:'var(--text-dim)'},
+    {key:'feature',label:'Feature',color:'var(--feature)'},
+    {key:'bug',label:'Bug fix',color:'var(--bug)'},
+  ], null, true);
+  buildFilterColumn('filterPriority','Priority', PRIORITIES, 'priority');
+  buildFilterColumn('filterStatus','Status', STATUSES, 'status');
+  buildFilterColumn('filterVersion','Release version', allVersions().map(v=>({key:v,label:v,color:'var(--version)'})), 'version');
+}
+
+function buildSortChips(){
+  const wrap = document.getElementById('sortChips');
+  wrap.innerHTML = '';
+  view.sortRules.forEach((rule,i)=>{
+    const def = SORT_FIELDS.find(f=>f.key===rule.field);
+    const chip = document.createElement('div');
+    chip.className = 'sort-chip';
+    chip.innerHTML = `${i>0?`<button data-act="up" title="Higher priority">&uarr;</button>`:''}<span>${def?def.label:rule.field}</span><span class="arrow" data-act="dir">${rule.dir==='asc'?'↑':'↓'}</span><button data-act="remove">&times;</button>`;
+    chip.querySelector('[data-act="dir"]').onclick = ()=>{ rule.dir = rule.dir==='asc'?'desc':'asc'; persistView(); buildControls(); render(); };
+    chip.querySelector('[data-act="remove"]').onclick = ()=>{ view.sortRules.splice(i,1); persistView(); buildControls(); render(); };
+    const upBtn = chip.querySelector('[data-act="up"]');
+    if(upBtn) upBtn.onclick = ()=>{ [view.sortRules[i-1],view.sortRules[i]]=[view.sortRules[i],view.sortRules[i-1]]; persistView(); buildControls(); render(); };
+    wrap.appendChild(chip);
+  });
+  const addSel = document.getElementById('addSortField');
+  addSel.innerHTML = '<option value="">+ Add sort field&hellip;</option>';
+  SORT_FIELDS.filter(f=>!view.sortRules.some(r=>r.field===f.key)).forEach(f=>{
+    const o = document.createElement('option'); o.value=f.key; o.textContent=f.label; addSel.appendChild(o);
+  });
+  addSel.onchange = ()=>{
+    if(!addSel.value) return;
+    view.sortRules.push({field:addSel.value, dir:'asc'});
+    addSel.value='';
+    persistView(); buildControls(); render();
+  };
+}
+
+function buildFilterColumn(elId, title, options, filterKey, isRadio){
+  const el = document.getElementById(elId);
+  el.innerHTML = `<div class="filter-col-head"><span class="filter-col-title">${title}</span>${filterKey?'<span class="filter-quick" data-all>All</span>':''}</div>`;
+  if(isRadio){
+    options.forEach(o=>{
+      const row = document.createElement('label');
+      row.className='filter-check';
+      row.innerHTML = `<input type="radio" name="typeFilter" ${view.filters.type===o.key?'checked':''}><span class="sw" style="background:${o.color}"></span>${o.label}`;
+      row.querySelector('input').onchange = ()=>{ view.filters.type=o.key; persistView(); resetPage(); render(); };
+      el.appendChild(row);
+    });
+    return;
+  }
+  options.forEach(o=>{
+    const row = document.createElement('label');
+    row.className='filter-check';
+    const checked = view.filters[filterKey].includes(o.key);
+    row.innerHTML = `<input type="checkbox" ${checked?'checked':''}><span class="sw" style="background:${o.color}"></span>${o.label}`;
+    row.querySelector('input').onchange = (e)=>{
+      const set = new Set(view.filters[filterKey]);
+      if(e.target.checked) set.add(o.key); else set.delete(o.key);
+      view.filters[filterKey] = Array.from(set);
+      persistView(); resetPage(); render();
+    };
+    el.appendChild(row);
+  });
+  const allLink = el.querySelector('[data-all]');
+  if(allLink){
+    allLink.onclick = ()=>{
+      const full = view.filters[filterKey].length === options.length;
+      view.filters[filterKey] = full ? [] : options.map(o=>o.key);
+      persistView(); resetPage(); buildControls(); render();
+    };
+  }
+}
+
+document.getElementById('subGroupToggle').onchange = e=>{ view[groupState().subKey]=e.target.checked; persistView(); render(); };
+document.getElementById('versionGroupToggle').onchange = e=>{ view[groupState().verKey]=e.target.checked; persistView(); render(); };
+document.getElementById('timeToggle').onchange = e=>{ view.showTime=e.target.checked; persistView(); render(); };
+document.getElementById('filterToggleBtn').onclick = ()=>{
+  const open = document.getElementById('filterPanel').classList.toggle('open');
+  document.getElementById('filterToggleBtn').classList.toggle('active', open);
+};
+document.getElementById('expandAllBtn').onclick = ()=>{
+  if(view.view==='table'){
+    collapsedTable.clear();
+    const body = document.getElementById('tableBody');
+    body.querySelectorAll('.chevron').forEach(c => c.classList.remove('collapsed'));
+    body.querySelectorAll('tr').forEach(r => {
+      if(r.classList.contains('group-collapsed-hidden')){
+        r.classList.add('row-expanding');
+        r.classList.remove('group-collapsed-hidden');
+        requestAnimationFrame(()=>{
+          r.classList.remove('row-expanding');
+        });
+      }
+    });
+  } else {
+    collapsedCard.clear();
+    const tree = document.getElementById('tree');
+    tree.querySelectorAll('.node-children').forEach(el => el.classList.remove('collapsed'));
+    tree.querySelectorAll('.chevron').forEach(el => el.classList.remove('collapsed'));
+  }
+};
+document.getElementById('collapseAllBtn').onclick = ()=>{
+  if(view.view==='table'){
+    collapsedTable = new Set(knownBranchKeysTable);
+    const body = document.getElementById('tableBody');
+    body.querySelectorAll('.chevron').forEach(c => c.classList.add('collapsed'));
+    const rowsToHide = body.querySelectorAll('tr[data-parent-paths]');
+    rowsToHide.forEach(r => r.classList.add('row-collapsing'));
+    setTimeout(()=>{
+      rowsToHide.forEach(r => {
+        r.classList.remove('row-collapsing');
+        r.classList.add('group-collapsed-hidden');
+      });
+    }, 100);
+  } else {
+    collapsedCard = new Set(knownBranchKeysCard);
+    const tree = document.getElementById('tree');
+    tree.querySelectorAll('.node-children').forEach(el => el.classList.add('collapsed'));
+    tree.querySelectorAll('.chevron').forEach(el => el.classList.add('collapsed'));
+  }
+};
+
+/* ---------- filter + sort ---------- */
+function passesFilter(c){
+  if(view.archiveFilter==='active' && c.archived) return false;
+  if(view.archiveFilter==='archived' && !c.archived) return false;
+  if(view.filters.type!=='all' && c.type!==view.filters.type) return false;
+  if(!view.filters.priority.includes(c.priority)) return false;
+  if(!view.filters.status.includes(c.status)) return false;
+  const v = c.version || 'Unreleased';
+  if(!view.filters.version.includes(v)) return false;
+  return true;
+}
+function fieldCompare(field, a, b){
+  if(field==='priority') return PRIORITY_INDEX[a.priority]-PRIORITY_INDEX[b.priority];
+  if(field==='status') return STATUS_INDEX[a.status]-STATUS_INDEX[b.status];
+  if(field==='title') return (a.title||'').localeCompare(b.title||'');
+  if(field==='type') return (a.type||'').localeCompare(b.type||'');
+  if(field==='owner') return (a.owner||'').localeCompare(b.owner||'');
+  if(field==='version') return (a.version||'').localeCompare(b.version||'');
+  return 0;
+}
+function compareCards(a,b){
+  for(const rule of view.sortRules){
+    const dirMul = rule.dir==='desc' ? -1 : 1;
+    const d = fieldCompare(rule.field, a, b) * dirMul;
+    if(d!==0) return d;
+  }
+  return a.order-b.order;
+}
+function findRuleDir(field){ const r = view.sortRules.find(x=>x.field===field); return r ? r.dir : null; }
+
+/* ---------- grouping (shared by card + table) ---------- */
+function dimDef(dim){
+  let order, meta;
+  if(dim==='priority'){ order=PRIORITIES.map(p=>p.key); meta=Object.fromEntries(PRIORITIES.map(p=>[p.key,p])); }
+  else if(dim==='status'){ order=STATUSES.map(s=>s.key); meta=Object.fromEntries(STATUSES.map(s=>[s.key,s])); }
+  else { const vs=allVersions(); order=vs; meta=Object.fromEntries(vs.map(v=>[v,{key:v,label:v,color:'var(--version)'}])); }
+  const dir = findRuleDir(dim);
+  if(dir==='desc') order = [...order].reverse();
+  return {order, meta};
+}
+function keyOf(dim,c){ return dim==='version' ? (c.version||'Unreleased') : c[dim]; }
+function buildTree(list, dims, isTop){
+  if(dims.length===0) return {leaf:true, cards:list};
+  const [dim,...rest] = dims;
+  const def = dimDef(dim);
+  const groups = def.order.map(val=>{
+    const groupCards = list.filter(c=>keyOf(dim,c)===val);
+    if(!isTop && groupCards.length===0) return null;
+    return { dim, val, meta: def.meta[val], cards: groupCards, child: buildTree(groupCards, rest, false) };
+  }).filter(Boolean);
+  return {leaf:false, dim, groups};
+}
+function dimsFor(scope){
+  const isTable = scope==='table';
+  const primary = isTable ? view.tablePrimary : view.primary;
+  if(isTable && primary==='none') return [];
+  const sub = isTable ? view.tableSubGroup : view.subGroup;
+  const verGroup = isTable ? view.tableVersionGroup : view.versionGroup;
+  const other = primary==='priority' ? 'status' : 'priority';
+  return [primary, sub?other:null, verGroup?'version':null].filter(Boolean);
+}
+
+/* ---------- drag hint cleanup ---------- */
+function clearDragHints(){
+  document.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  document.querySelectorAll('.drag-insert-before').forEach(el=>el.classList.remove('drag-insert-before'));
+  document.querySelectorAll('.drag-insert-after').forEach(el=>el.classList.remove('drag-insert-after'));
+  document.querySelectorAll('.drop-target-active').forEach(el=>el.classList.remove('drop-target-active'));
+}
+document.addEventListener('dragend', clearDragHints);
+
+async function reorderAndAssign(sourceId, targetPath, leafKey, leafList){
+  const source = cards.find(x=>x.id===sourceId);
+  if(!source) return;
+  targetPath.forEach(seg=>{ const [dim,val]=seg.split(':'); if(dim==='priority'||dim==='status') source[dim]=val; });
+  let ids = leafList.map(c=>c.id).filter(x=>x!==sourceId);
+  let insertAt = ids.length;
+  if(dragOverInfo && dragOverInfo.leafKey===leafKey && dragOverInfo.overCardId!==sourceId){
+    const idx = ids.indexOf(dragOverInfo.overCardId);
+    if(idx!==-1) insertAt = dragOverInfo.pos==='before' ? idx : idx+1;
+  }
+  ids.splice(insertAt,0,sourceId);
+  ids.forEach((cid,i)=>{ const cc=cards.find(x=>x.id===cid); if(cc) cc.order=i*10; });
+  source.updatedAt = nowISO();
+  dragOverInfo = null;
+  await persistCards();
+  render();
+}
+
+/* ---------- render dispatch ---------- */
+function render(){
+  document.getElementById('cardView').classList.toggle('hidden', view.view!=='card');
+  document.getElementById('tableView').classList.toggle('hidden', view.view!=='table');
+  const filtered = cards.filter(passesFilter);
+  document.getElementById('itemCount').textContent = `${filtered.length} of ${cards.length} items shown`;
+  if(view.view==='card') renderCardView(filtered);
+  else renderTableView(filtered);
+}
+
+/* ---------- card view ---------- */
+function renderCardView(filtered){
+  const dims = dimsFor('card');
+  const tree = buildTree(filtered, dims, true);
+  knownBranchKeysCard = [];
+  const root = document.getElementById('tree');
+  root.innerHTML = '';
+  root.appendChild(renderCardNode(tree, []));
+}
+function renderCardNode(node, path){
+  if(node.leaf){
+    const list = [...node.cards].sort(compareCards);
+    const leafKey = path.join('>');
+    const wrap = document.createElement('div');
+    wrap.className = 'leaf';
+    if(list.length===0){ wrap.innerHTML = '<div class="leaf-empty">Nothing here</div>'; }
+    else { list.forEach(c=> wrap.appendChild(renderCard(c, leafKey, path, list))); }
+    wrap.addEventListener('dragover', e=>{ e.preventDefault(); wrap.classList.add('drag-over'); });
+    wrap.addEventListener('dragleave', ()=> wrap.classList.remove('drag-over'));
+    wrap.addEventListener('drop', async e=>{
+      e.preventDefault(); wrap.classList.remove('drag-over'); clearDragHints();
+      const id = e.dataTransfer.getData('text/plain');
+      if(id) await reorderAndAssign(id, path, leafKey, list);
+    });
+    return wrap;
+  }
+  const frag = document.createDocumentFragment();
+  node.groups.forEach(g=>{
+    const groupPath = [...path, `${g.dim}:${g.val}`];
+    const pathKey = groupPath.join('>');
+    knownBranchKeysCard.push(pathKey);
+    const isCollapsed = collapsedCard.has(pathKey);
+    const nodeEl = document.createElement('div');
+    nodeEl.className = 'node';
+    const head = document.createElement('div');
+    head.className = 'node-head';
+    head.style.setProperty('--nodecolor', g.meta.color);
+    head.innerHTML = `<span class="chevron ${isCollapsed?'collapsed':''}">▾</span><span class="node-label">${escapeHtml(g.meta.label)}</span><span class="node-count">${g.cards.length}</span>`;
+
+    const childWrap = document.createElement('div');
+    childWrap.className = 'node-children' + (isCollapsed?' collapsed':'');
+    const childInner = document.createElement('div');
+    childInner.className = 'node-children-inner';
+    childInner.appendChild(renderCardNode(g.child, groupPath));
+    childWrap.appendChild(childInner);
+
+    head.addEventListener('click', ()=>{
+      const isNowCollapsed = childWrap.classList.toggle('collapsed');
+      const chev = head.querySelector('.chevron');
+      if(chev) chev.classList.toggle('collapsed', isNowCollapsed);
+      if(isNowCollapsed) collapsedCard.add(pathKey);
+      else collapsedCard.delete(pathKey);
+    });
+
+    head.addEventListener('dragover', e=>{ e.preventDefault(); head.classList.add('drop-target-active'); });
+    head.addEventListener('dragleave', ()=> head.classList.remove('drop-target-active'));
+    head.addEventListener('drop', async e=>{
+      e.preventDefault(); e.stopPropagation(); head.classList.remove('drop-target-active'); clearDragHints();
+      const id = e.dataTransfer.getData('text/plain');
+      if(id) await reorderAndAssign(id, groupPath, pathKey, g.cards);
+    });
+
+    nodeEl.appendChild(head);
+    nodeEl.appendChild(childWrap);
+    frag.appendChild(nodeEl);
+  });
+  return frag;
+}
+function toggleReleaseNotes(cardId){
+  const cardNotes = document.getElementById(`card-rn-${cardId}`);
+  if(cardNotes) cardNotes.classList.toggle('open');
+  const tblNotes = document.getElementById(`tbl-rn-${cardId}`);
+  if(tblNotes) tblNotes.classList.toggle('open');
+}
+
+let activeContextMenu = null;
+function hideContextMenu(){
+  const cm = document.getElementById('contextMenu');
+  if(cm){ cm.classList.remove('open'); cm.innerHTML = ''; }
+  activeContextMenu = null;
+}
+document.addEventListener('click', hideContextMenu);
+document.addEventListener('contextmenu', e=>{
+  if(!e.target.closest('.has-ctx-menu')) hideContextMenu();
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') hideContextMenu(); });
+
+function showContextMenu(e, item, field){
+  e.preventDefault();
+  e.stopPropagation();
+  const cm = document.getElementById('contextMenu');
+  cm.innerHTML = '';
+  
+  const head = document.createElement('div');
+  head.className = 'context-menu-header';
+  head.textContent = `${field.toUpperCase()} · ${item.id}`;
+  cm.appendChild(head);
+
+  if(field === 'type'){
+    const options = [
+      {key:'feature', label:'Feature'},
+      {key:'bug', label:'Bug fix'},
+    ];
+    options.forEach(opt=>{
+      const btn = document.createElement('button');
+      btn.className = 'context-menu-item' + (item.type===opt.key ? ' active' : '');
+      btn.innerHTML = `${item.type===opt.key?'✓ ':''}${opt.label}`;
+      btn.onclick = async ()=>{
+        item.type = opt.key;
+        item.updatedAt = nowISO();
+        await persistCards();
+        render();
+        hideContextMenu();
+      };
+      cm.appendChild(btn);
+    });
+  } else if(field === 'priority'){
+    PRIORITIES.forEach(p=>{
+      const btn = document.createElement('button');
+      btn.className = 'context-menu-item' + (item.priority===p.key ? ' active' : '');
+      btn.innerHTML = `<span style="color:${p.color}">●</span> ${item.priority===p.key?'✓ ':''}${p.label}`;
+      btn.onclick = async ()=>{
+        item.priority = p.key;
+        item.updatedAt = nowISO();
+        await persistCards();
+        render();
+        hideContextMenu();
+      };
+      cm.appendChild(btn);
+    });
+  } else if(field === 'status'){
+    STATUSES.forEach(st=>{
+      const btn = document.createElement('button');
+      btn.className = 'context-menu-item' + (item.status===st.key ? ' active' : '');
+      btn.innerHTML = `<span style="color:${st.color}">●</span> ${item.status===st.key?'✓ ':''}${st.label}`;
+      btn.onclick = async ()=>{
+        if(st.key==='blocked'){
+          hideContextMenu();
+          openModal(item.id, 'blocked');
+          return;
+        }
+        if(st.key==='done' && !item.version){
+          hideContextMenu();
+          openModal(item.id, 'done');
+          return;
+        }
+        item.status = st.key;
+        if(st.key!=='blocked') item.blocked = '';
+        item.updatedAt = nowISO();
+        await persistCards();
+        render();
+        hideContextMenu();
+      };
+      cm.appendChild(btn);
+    });
+  } else if(field === 'owner'){
+    owners.forEach(o=>{
+      const btn = document.createElement('button');
+      btn.className = 'context-menu-item' + (item.owner===o ? ' active' : '');
+      btn.innerHTML = `${item.owner===o?'✓ ':''}${escapeHtml(o)}`;
+      btn.onclick = async ()=>{
+        item.owner = o;
+        item.updatedAt = nowISO();
+        await persistCards();
+        render();
+        hideContextMenu();
+      };
+      cm.appendChild(btn);
+    });
+    const div = document.createElement('div'); div.className = 'context-menu-divider'; cm.appendChild(div);
+    const customBtn = document.createElement('button');
+    customBtn.className = 'context-menu-item';
+    customBtn.textContent = '✏ Custom owner...';
+    customBtn.onclick = async ()=>{
+      hideContextMenu();
+      const val = await showPromptModal('Custom Owner', 'Enter owner name:', item.owner || '');
+      if(val!==null){
+        item.owner = val.trim();
+        if(item.owner && !owners.includes(item.owner)){ owners.push(item.owner); await persistOwners(); }
+        item.updatedAt = nowISO();
+        await persistCards();
+        render();
+      }
+    };
+    cm.appendChild(customBtn);
+
+    if(item.owner){
+      const clearBtn = document.createElement('button');
+      clearBtn.className = 'context-menu-item';
+      clearBtn.style.color = 'var(--pri-high)';
+      clearBtn.textContent = '✕ Clear owner';
+      clearBtn.onclick = async ()=>{
+        item.owner = '';
+        item.updatedAt = nowISO();
+        await persistCards();
+        render();
+        hideContextMenu();
+      };
+      cm.appendChild(clearBtn);
+    }
+  } else if(field === 'version'){
+    const verBtn = document.createElement('button');
+    verBtn.className = 'context-menu-item';
+    verBtn.innerHTML = `🏷️ Change Version Value (current: ${escapeHtml(item.version||'None')})`;
+    verBtn.onclick = async ()=>{
+      hideContextMenu();
+      const val = await showPromptModal('Release Version', 'Enter release version (e.g. v1.2.0):', item.version || '');
+      if(val!==null){
+        item.version = val.trim();
+        item.updatedAt = nowISO();
+        reconcileVersionFilter();
+        buildControls();
+        await persistCards();
+        render();
+      }
+    };
+    cm.appendChild(verBtn);
+
+    const notesBtn = document.createElement('button');
+    notesBtn.className = 'context-menu-item';
+    notesBtn.innerHTML = `📝 Edit Release Notes`;
+    notesBtn.onclick = async ()=>{
+      hideContextMenu();
+      const val = await showPromptModal('Release Notes', 'Edit release notes for ' + (item.version||item.id) + ':', item.notes || '', {multiline:true});
+      if(val!==null){
+        item.notes = val.trim();
+        item.updatedAt = nowISO();
+        await persistCards();
+        render();
+      }
+    };
+    cm.appendChild(notesBtn);
+
+    const toggleNotesBtn = document.createElement('button');
+    toggleNotesBtn.className = 'context-menu-item';
+    toggleNotesBtn.innerHTML = `ℹ️ Toggle Release Notes display`;
+    toggleNotesBtn.onclick = ()=>{
+      hideContextMenu();
+      toggleReleaseNotes(item.id);
+    };
+    cm.appendChild(toggleNotesBtn);
+  }
+
+  cm.style.top = '0px';
+  cm.style.left = '0px';
+  cm.classList.add('open');
+  const rect = cm.getBoundingClientRect();
+  let x = e.clientX;
+  let y = e.clientY;
+  if(x + rect.width > window.innerWidth - 10) x = window.innerWidth - rect.width - 10;
+  if(y + rect.height > window.innerHeight - 10) y = window.innerHeight - rect.height - 10;
+  cm.style.left = Math.max(10, x) + 'px';
+  cm.style.top = Math.max(10, y) + 'px';
+}
+
+function renderCard(c, leafKey, path=[], leafList=[]){
+  const s = STATUSES.find(x=>x.key===c.status) || STATUSES[0];
+  const card = document.createElement('div');
+  card.className = 'card' + (c.archived?' archived':'');
+  card.draggable = true;
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="card-inner" style="padding-bottom:0;gap:4px;">
+        <div class="card-top">
+          <span class="type-pill ${c.type}">${c.type==='bug'?'Bug':'Feature'}</span>
+          <span class="card-id">${c.id}</span>
+        </div>
+        <p class="card-title">${escapeHtml(c.title)}</p>
+      </div>
+    </div>
+    <div class="card-inner" style="padding-top:4px;">
+      ${c.desc ? `<p class="card-desc">${escapeHtml(c.desc)}</p>` : ''}
+      <div class="status-label" style="--statuscolor:${s.color}"><span class="sw"></span>${s.label} &middot; ${PRI_SHORT[c.priority]}</div>
+      <div class="track">${STATUSES.map((st,i)=>`<span class="track-dot ${i<=STATUS_INDEX[c.status]?'filled':''}" style="--dotcolor:${st.color}" data-status="${st.key}" title="${st.label}"></span>`).join('')}</div>
+      ${c.status==='blocked' && c.blocked ? `<div class="blocked-note">⛔ ${escapeHtml(c.blocked)}</div>` : ''}
+      ${c.status==='done' && c.version ? `
+        <div class="version-wrap">
+          <div class="version-badge" title="Click to view release notes">${escapeHtml(c.version)}</div>
+          <button type="button" class="version-info-btn" title="View release notes">ℹ</button>
+        </div>
+        <div class="release-notes" id="card-rn-${c.id}">${escapeHtml(c.notes||'No release notes yet.')}</div>
+      ` : ''}
+      ${c.archived ? `<span class="archived-tag">Archived</span>` : ''}
+      ${view.showTime ? `<div class="meta-time">created ${fmtDate(c.createdAt)} &middot; updated ${fmtDate(c.updatedAt)}</div>` : ''}
+      <div class="card-foot"><span class="owner-tag">${c.owner?escapeHtml(c.owner):''}</span></div>
+    </div>
+  `;
+  card.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', c.id); setTimeout(()=>card.classList.add('dragging'),0); });
+  card.addEventListener('dragend', ()=>{ card.classList.remove('dragging'); clearDragHints(); });
+  card.addEventListener('dragover', e=>{
+    e.preventDefault();
+    const rect = card.getBoundingClientRect();
+    const before = e.clientX < rect.left + rect.width/2;
+    document.querySelectorAll('.card.drag-insert-before, .card.drag-insert-after').forEach(el=>{
+      if(el!==card) el.classList.remove('drag-insert-before','drag-insert-after');
+    });
+    card.classList.toggle('drag-insert-before', before);
+    card.classList.toggle('drag-insert-after', !before);
+    dragOverInfo = { leafKey, overCardId: c.id, pos: before?'before':'after' };
+  });
+  card.addEventListener('dragleave', ()=>{ card.classList.remove('drag-insert-before','drag-insert-after'); });
+  card.addEventListener('drop', async e=>{
+    e.preventDefault(); e.stopPropagation(); clearDragHints();
+    const id = e.dataTransfer.getData('text/plain');
+    if(id) await reorderAndAssign(id, path, leafKey, leafList);
+  });
+  card.querySelector('.card-title').addEventListener('click', ()=> openModal(c.id));
+
+  const typePill = card.querySelector('.type-pill');
+  if(typePill){ typePill.classList.add('has-ctx-menu'); typePill.addEventListener('contextmenu', e=> showContextMenu(e, c, 'type')); }
+
+  const ownerTag = card.querySelector('.owner-tag');
+  if(ownerTag){ ownerTag.classList.add('has-ctx-menu'); ownerTag.addEventListener('contextmenu', e=> showContextMenu(e, c, 'owner')); }
+
+  const versionWrap = card.querySelector('.version-wrap');
+  if(versionWrap){
+    versionWrap.classList.add('has-ctx-menu');
+    versionWrap.addEventListener('contextmenu', e=> showContextMenu(e, c, 'version'));
+    const badge = card.querySelector('.version-badge');
+    const infoBtn = card.querySelector('.version-info-btn');
+    if(badge) badge.addEventListener('click', e=>{ e.stopPropagation(); toggleReleaseNotes(c.id); });
+    if(infoBtn) infoBtn.addEventListener('click', e=>{ e.stopPropagation(); toggleReleaseNotes(c.id); });
+  }
+
+  card.querySelectorAll('.track-dot').forEach(dot=>{
+    dot.addEventListener('click', async e=>{
+      e.stopPropagation();
+      const newStatus = dot.dataset.status;
+      if(newStatus==='blocked'){ openModal(c.id,'blocked'); return; }
+      if(newStatus==='done' && !c.version){ openModal(c.id,'done'); return; }
+      c.status = newStatus; if(newStatus!=='blocked') c.blocked='';
+      c.updatedAt = nowISO();
+      await persistCards(); render();
+    });
+  });
+  return card;
+}
+
+/* ---------- table view ---------- */
+const TABLE_COLS = [
+  {key:'title', label:'Title', sort:'title'},
+  {key:'type', label:'Type', sort:'type'},
+  {key:'priority', label:'Priority', sort:'priority'},
+  {key:'status', label:'Status', sort:'status'},
+  {key:'owner', label:'Owner', sort:'owner'},
+  {key:'version', label:'Version', sort:'version'},
+];
+function colCount(){ return 2 + TABLE_COLS.length + (view.showTime?2:0); }
+
+function renderTableHead(){
+  const head = document.getElementById('tableHead');
+  head.innerHTML = '<th style="width:26px;"></th>' + TABLE_COLS.map(col=>{
+    const sorted = view.sortRules[0] && view.sortRules[0].field===col.sort;
+    return `<th data-sort="${col.sort}" class="${sorted?'sorted':''}">${col.label}${sorted ? (view.sortRules[0].dir==='asc'?' ↑':' ↓') : ''}</th>`;
+  }).join('') + (view.showTime ? '<th>Created</th><th>Updated</th>' : '') + '<th>Actions</th>';
+  head.querySelectorAll('th[data-sort]').forEach(th=>{
+    th.onclick = ()=>{
+      const f = th.dataset.sort;
+      if(view.sortRules[0] && view.sortRules[0].field===f) view.sortRules[0].dir = view.sortRules[0].dir==='asc'?'desc':'asc';
+      else view.sortRules = [{field:f, dir:'asc'}, ...view.sortRules.filter(r=>r.field!==f)];
+      persistView(); buildControls(); render();
+    };
+  });
+}
+
+function renderTableView(filtered){
+  renderTableHead();
+  const dims = dimsFor('table');
+  const body = document.getElementById('tableBody');
+  body.innerHTML = '';
+  const pager = document.getElementById('pager');
+
+  if(dims.length===0){
+    // flat, paginated
+    const list = [...filtered].sort(compareCards);
+    const pageSize = view.pageSize;
+    const totalPages = Math.max(1, Math.ceil(list.length/pageSize));
+    if(view.page>totalPages) view.page = totalPages;
+    const startIdx = (view.page-1)*pageSize;
+    const pageList = list.slice(startIdx, startIdx+pageSize);
+
+    if(pageList.length===0){
+      body.innerHTML = `<tr><td colspan="${colCount()}" class="table-empty">Nothing matches the current filters</td></tr>`;
+    } else {
+      pageList.forEach(c=> body.appendChild(renderTableRow(c, [], list)));
+      attachFlatTableDnd(body, list);
+    }
+    pager.classList.toggle('hidden', list.length<=pageSize && totalPages<=1);
+    document.getElementById('pagerInfo').textContent = `Page ${view.page} of ${totalPages} — ${list.length} rows`;
+    seg(document.getElementById('pageSizeSeg'), [[50,'50 / page'],[100,'100 / page']], view.pageSize, v=>{ view.pageSize=v; resetPage(); persistView(); render(); });
+    document.getElementById('prevPageBtn').disabled = view.page<=1;
+    document.getElementById('nextPageBtn').disabled = view.page>=totalPages;
+    document.getElementById('prevPageBtn').onclick = ()=>{ if(view.page>1){ view.page--; persistView(); render(); } };
+    document.getElementById('nextPageBtn').onclick = ()=>{ if(view.page<totalPages){ view.page++; persistView(); render(); } };
+  } else {
+    // grouped, no pagination
+    pager.classList.add('hidden');
+    knownBranchKeysTable = [];
+    const tree = buildTree(filtered, dims, true);
+    renderTableNode(tree, [], body);
+    if(body.innerHTML===''){
+      body.innerHTML = `<tr><td colspan="${colCount()}" class="table-empty">Nothing matches the current filters</td></tr>`;
+    }
+  }
+}
+
+function getAncestorPathKeys(path){
+  const keys = [];
+  for(let i = 1; i <= path.length; i++){
+    keys.push(path.slice(0, i).join('>'));
+  }
+  return keys;
+}
+
+function renderTableNode(node, path, body){
+  if(node.leaf){
+    const list = [...node.cards].sort(compareCards);
+    if(list.length===0) return;
+    const parentPathStr = getAncestorPathKeys(path).join('|');
+    list.forEach(c=> {
+      const tr = renderTableRow(c, path, list);
+      if(parentPathStr) tr.setAttribute('data-parent-paths', parentPathStr);
+      const isHidden = getAncestorPathKeys(path).some(pk => collapsedTable.has(pk));
+      if(isHidden) tr.classList.add('group-collapsed-hidden');
+      body.appendChild(tr);
+    });
+    return;
+  }
+  node.groups.forEach(g=>{
+    const groupPath = [...path, `${g.dim}:${g.val}`];
+    const pathKey = groupPath.join('>');
+    knownBranchKeysTable.push(pathKey);
+    const isCollapsed = collapsedTable.has(pathKey);
+    const tr = document.createElement('tr');
+    tr.className = 'group-row';
+    tr.style.setProperty('--nodecolor', g.meta.color);
+    tr.setAttribute('data-pathkey', pathKey);
+    const parentPathStr = getAncestorPathKeys(path).join('|');
+    if(parentPathStr) tr.setAttribute('data-parent-paths', parentPathStr);
+    const isHidden = getAncestorPathKeys(path).some(pk => collapsedTable.has(pk));
+    if(isHidden) tr.classList.add('group-collapsed-hidden');
+
+    const td = document.createElement('td');
+    td.colSpan = colCount();
+    td.innerHTML = `<span class="chevron ${isCollapsed?'collapsed':''}" style="display:inline-block;margin-right:6px;">▾</span>${escapeHtml(g.meta.label)}<span class="node-count">${g.cards.length}</span>`;
+    tr.appendChild(td);
+
+    tr.addEventListener('click', (e)=>{
+      if(e.target.closest('.has-ctx-menu')) return;
+      e.stopPropagation();
+      const isNowCollapsed = !collapsedTable.has(pathKey);
+      if(isNowCollapsed) collapsedTable.add(pathKey);
+      else collapsedTable.delete(pathKey);
+
+      const chev = tr.querySelector('.chevron');
+      if(chev) chev.classList.toggle('collapsed', isNowCollapsed);
+
+      const childRows = Array.from(body.querySelectorAll('tr[data-parent-paths]')).filter(row => {
+        const parentPaths = (row.getAttribute('data-parent-paths') || '').split('|');
+        return parentPaths.includes(pathKey);
+      });
+
+      if(isNowCollapsed){
+        childRows.forEach(r => r.classList.add('row-collapsing'));
+        setTimeout(()=>{
+          childRows.forEach(r => {
+            r.classList.remove('row-collapsing');
+            r.classList.add('group-collapsed-hidden');
+          });
+        }, 100);
+      } else {
+        childRows.forEach(r => {
+          const parentPaths = (r.getAttribute('data-parent-paths') || '').split('|');
+          const hasOtherCollapsedAncestor = parentPaths.some(p => p !== pathKey && collapsedTable.has(p));
+          if(!hasOtherCollapsedAncestor){
+            r.classList.add('row-expanding');
+            r.classList.remove('group-collapsed-hidden');
+            requestAnimationFrame(()=>{
+              r.classList.remove('row-expanding');
+            });
+          }
+        });
+      }
+    });
+
+    tr.addEventListener('dragover', e=>{ e.preventDefault(); tr.classList.add('drop-target-active'); });
+    tr.addEventListener('dragleave', ()=> tr.classList.remove('drop-target-active'));
+    tr.addEventListener('drop', async e=>{
+      e.preventDefault(); e.stopPropagation(); tr.classList.remove('drop-target-active');
+      const id = e.dataTransfer.getData('text/plain');
+      if(id) await reorderAndAssign(id, groupPath, pathKey, g.cards);
+    });
+    body.appendChild(tr);
+    renderTableNode(g.child, groupPath, body);
+  });
+}
+
+function renderTableRow(c, path, leafList){
+  const s = STATUSES.find(x=>x.key===c.status) || STATUSES[0];
+  const p = PRIORITIES.find(x=>x.key===c.priority);
+  const leafKey = path.join('>');
+  const tr = document.createElement('tr');
+  tr.className = 'drag-row' + (c.archived?' archived-row':'');
+  tr.draggable = true;
+  tr.innerHTML = `
+    <td class="drag-handle">⠿</td>
+    <td><span class="row-title">${escapeHtml(c.title)}</span><span class="row-desc">${escapeHtml(c.desc||'')}</span></td>
+    <td class="td-type"><span class="type-pill ${c.type}">${c.type==='bug'?'Bug':'Feature'}</span></td>
+    <td class="td-priority" style="color:${p.color}">${p.label.replace(' priority','')}</td>
+    <td class="td-status" style="color:${s.color}">${s.label}${c.status==='blocked'&&c.blocked?` (${escapeHtml(c.blocked)})`:''}</td>
+    <td class="td-owner">${c.owner?escapeHtml(c.owner):'<span class="dash">—</span>'}</td>
+    <td class="td-version">${c.status==='done'&&c.version?`
+      <span class="version-wrap">
+        <span class="version-badge" title="Click to view release notes">${escapeHtml(c.version)}</span>
+        <button type="button" class="version-info-btn" title="View release notes">ℹ</button>
+      </span>
+      <div class="release-notes" id="tbl-rn-${c.id}">${escapeHtml(c.notes||'No release notes yet.')}</div>
+    `:'<span class="dash">—</span>'}</td>
+    ${view.showTime ? `<td class="meta-time">${fmtDate(c.createdAt)}</td><td class="meta-time">${fmtDate(c.updatedAt)}</td>` : ''}
+    <td class="row-actions"></td>
+  `;
+  tr.querySelector('.row-title').addEventListener('click', ()=> openModal(c.id));
+
+  const tdType = tr.querySelector('.td-type');
+  if(tdType){ tdType.classList.add('has-ctx-menu'); tdType.addEventListener('contextmenu', e=> showContextMenu(e, c, 'type')); }
+
+  const tdPri = tr.querySelector('.td-priority');
+  if(tdPri){ tdPri.classList.add('has-ctx-menu'); tdPri.addEventListener('contextmenu', e=> showContextMenu(e, c, 'priority')); }
+
+  const tdStat = tr.querySelector('.td-status');
+  if(tdStat){ tdStat.classList.add('has-ctx-menu'); tdStat.addEventListener('contextmenu', e=> showContextMenu(e, c, 'status')); }
+
+  const tdOwner = tr.querySelector('.td-owner');
+  if(tdOwner){ tdOwner.classList.add('has-ctx-menu'); tdOwner.addEventListener('contextmenu', e=> showContextMenu(e, c, 'owner')); }
+
+  const tdVer = tr.querySelector('.td-version');
+  if(tdVer){
+    tdVer.classList.add('has-ctx-menu');
+    tdVer.addEventListener('contextmenu', e=> showContextMenu(e, c, 'version'));
+    const badge = tdVer.querySelector('.version-badge');
+    const infoBtn = tdVer.querySelector('.version-info-btn');
+    if(badge) badge.addEventListener('click', e=>{ e.stopPropagation(); toggleReleaseNotes(c.id); });
+    if(infoBtn) infoBtn.addEventListener('click', e=>{ e.stopPropagation(); toggleReleaseNotes(c.id); });
+  }
+
+  const actions = tr.querySelector('.row-actions');
+  const archBtn = document.createElement('button');
+  archBtn.className='btn icon small';
+  archBtn.textContent = c.archived ? 'Restore' : 'Archive';
+  archBtn.onclick = async ()=>{ c.archived=!c.archived; c.updatedAt=nowISO(); await persistCards(); render(); };
+  actions.appendChild(archBtn);
+  if(c.archived){
+    const delBtn = document.createElement('button');
+    delBtn.className='btn icon small danger';
+    delBtn.textContent='Delete';
+    delBtn.onclick = async ()=>{
+      const confirmed = await showConfirmModal('Delete Item', `Are you sure you want to permanently delete "${c.title}" (${c.id})?`, {confirmText: 'Delete', danger: true});
+      if(!confirmed) return;
+      cards = cards.filter(x=>x.id!==c.id);
+      await persistCards(); render();
+    };
+    actions.appendChild(delBtn);
+  }
+  tr.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', c.id); tr.classList.add('dragging'); });
+  tr.addEventListener('dragend', ()=> tr.classList.remove('dragging'));
+  tr.addEventListener('dragover', e=>{
+    e.preventDefault();
+    const rect = tr.getBoundingClientRect();
+    const before = e.clientY < rect.top+rect.height/2;
+    tr.classList.toggle('drag-insert-before', before);
+    tr.classList.toggle('drag-insert-after', !before);
+    dragOverInfo = { leafKey, overCardId: c.id, pos: before?'before':'after' };
+  });
+  tr.addEventListener('dragleave', ()=> tr.classList.remove('drag-insert-before','drag-insert-after'));
+  tr.addEventListener('drop', async e=>{
+    e.preventDefault(); e.stopPropagation();
+    const id = e.dataTransfer.getData('text/plain');
+    if(id) await reorderAndAssign(id, path, leafKey, leafList);
+  });
+  return tr;
+}
+
+function attachFlatTableDnd(tbody, list){
+  tbody.addEventListener('dragover', e=> e.preventDefault());
+  tbody.addEventListener('drop', async e=>{
+    if(e.target.closest('tr')) return; // handled by row's own drop
+    e.preventDefault();
+    const id = e.dataTransfer.getData('text/plain');
+    if(id) await reorderAndAssign(id, [], '', list);
+  });
+}
+
+/* ---------- modal ---------- */
+function showPromptModal(title, message, defaultValue = '', options = {}) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('promptOverlay');
+    const titleEl = document.getElementById('promptTitle');
+    const msgEl = document.getElementById('promptMessage');
+    const inputEl = document.getElementById('promptInput');
+    const textareaEl = document.getElementById('promptTextarea');
+    const cancelBtn = document.getElementById('promptCancelBtn');
+    const okBtn = document.getElementById('promptOkBtn');
+
+    titleEl.textContent = title || 'Input Required';
+    msgEl.textContent = message || '';
+
+    const isMultiline = !!options.multiline;
+    if (isMultiline) {
+      inputEl.classList.add('hidden');
+      textareaEl.classList.remove('hidden');
+      textareaEl.value = defaultValue;
+    } else {
+      textareaEl.classList.add('hidden');
+      inputEl.classList.remove('hidden');
+      inputEl.value = defaultValue;
+    }
+
+    const targetInput = isMultiline ? textareaEl : inputEl;
+
+    function cleanup(val) {
+      overlay.classList.remove('open');
+      okBtn.onclick = null;
+      cancelBtn.onclick = null;
+      overlay.onclick = null;
+      window.removeEventListener('keydown', handleKey);
+      resolve(val);
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Escape') {
+        cleanup(null);
+      } else if (e.key === 'Enter' && (!isMultiline || e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        cleanup(targetInput.value);
+      }
+    }
+
+    okBtn.onclick = () => cleanup(targetInput.value);
+    cancelBtn.onclick = () => cleanup(null);
+    overlay.onclick = (e) => { if (e.target === overlay) cleanup(null); };
+    window.addEventListener('keydown', handleKey);
+
+    overlay.classList.add('open');
+    setTimeout(() => {
+      targetInput.focus();
+      targetInput.select();
+    }, 50);
+  });
+}
+
+function showConfirmModal(title, message, options = {}) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('confirmOverlay');
+    const titleEl = document.getElementById('confirmTitle');
+    const msgEl = document.getElementById('confirmMessage');
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+    const okBtn = document.getElementById('confirmOkBtn');
+
+    titleEl.textContent = title || 'Confirm Action';
+    msgEl.textContent = message || 'Are you sure?';
+    okBtn.textContent = options.confirmText || 'Confirm';
+    if (options.danger !== false) {
+      okBtn.className = 'btn danger small';
+    } else {
+      okBtn.className = 'btn primary small';
+    }
+
+    function cleanup(val) {
+      overlay.classList.remove('open');
+      okBtn.onclick = null;
+      cancelBtn.onclick = null;
+      overlay.onclick = null;
+      window.removeEventListener('keydown', handleKey);
+      resolve(val);
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Escape') {
+        cleanup(false);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        cleanup(true);
+      }
+    }
+
+    okBtn.onclick = () => cleanup(true);
+    cancelBtn.onclick = () => cleanup(false);
+    overlay.onclick = (e) => { if (e.target === overlay) cleanup(false); };
+    window.addEventListener('keydown', handleKey);
+
+    overlay.classList.add('open');
+    setTimeout(() => {
+      okBtn.focus();
+    }, 50);
+  });
+}
+
+const overlay = document.getElementById('overlay');
+const statusSelect = document.getElementById('f-status');
+STATUSES.forEach(s=>{ const o=document.createElement('option'); o.value=s.key; o.textContent=s.label; statusSelect.appendChild(o); });
+statusSelect.addEventListener('change', syncConditionalFields);
+function syncConditionalFields(){
+  document.getElementById('blockedWrap').style.display = statusSelect.value==='blocked' ? 'block':'none';
+  const showVersion = statusSelect.value==='done';
+  document.getElementById('versionWrap').style.display = showVersion ? 'grid':'none';
+  document.getElementById('notesWrap').style.display = showVersion ? 'block':'none';
+}
+function refreshOwnerDatalist(){
+  const dl = document.getElementById('ownersDatalist');
+  dl.innerHTML = owners.map(o=>`<option value="${escapeHtml(o)}"></option>`).join('');
+}
+
+function openModal(id, forceStatus){
+  editingId = id;
+  const c = id ? cards.find(x=>x.id===id) : null;
+  document.getElementById('modalTitle').textContent = c ? `Edit ${c.id}` : 'New item';
+  const meta = document.getElementById('modalMeta');
+  if(c){ meta.textContent = `Created ${fmtDate(c.createdAt)} · Updated ${fmtDate(c.updatedAt)}`; meta.classList.remove('hidden'); }
+  else { meta.classList.add('hidden'); }
+  refreshOwnerDatalist();
+  document.getElementById('f-title').value = c ? c.title : '';
+  document.getElementById('f-desc').value = c ? c.desc : '';
+  document.getElementById('f-type').value = c ? c.type : 'feature';
+  document.getElementById('f-priority').value = c ? c.priority : 'med';
+  document.getElementById('f-status').value = forceStatus ? forceStatus : (c ? c.status : 'idea');
+  document.getElementById('f-owner').value = c ? c.owner : '';
+  document.getElementById('f-blocked').value = c ? (c.blocked||'') : '';
+  document.getElementById('f-version').value = c ? (c.version||'') : '';
+  document.getElementById('f-notes').value = c ? (c.notes||'') : '';
+  document.getElementById('archiveBtn').style.display = (c && !c.archived) ? 'inline-block' : 'none';
+  document.getElementById('restoreBtn').style.display = (c && c.archived) ? 'inline-block' : 'none';
+  document.getElementById('deleteBtn').style.display = (c && c.archived) ? 'inline-block' : 'none';
+  syncConditionalFields();
+  overlay.classList.add('open');
+  setTimeout(()=>{
+    if(forceStatus==='blocked') document.getElementById('f-blocked').focus();
+    else if(forceStatus==='done') document.getElementById('f-version').focus();
+    else document.getElementById('f-title').focus();
+  },50);
+}
+function closeModal(){ overlay.classList.remove('open'); editingId=null; }
+document.getElementById('addBtn').onclick = ()=> openModal(null);
+document.getElementById('cancelBtn').onclick = closeModal;
+overlay.addEventListener('click', e=>{ if(e.target===overlay) closeModal(); });
+
+document.getElementById('saveBtn').onclick = async ()=>{
+  const title = document.getElementById('f-title').value.trim();
+  if(!title){ document.getElementById('f-title').focus(); return; }
+  const status = document.getElementById('f-status').value;
+  const ownerVal = document.getElementById('f-owner').value.trim();
+  const data = {
+    type: document.getElementById('f-type').value,
+    title,
+    desc: document.getElementById('f-desc').value.trim(),
+    priority: document.getElementById('f-priority').value,
+    status,
+    owner: ownerVal,
+    blocked: status==='blocked' ? document.getElementById('f-blocked').value : '',
+    version: status==='done' ? document.getElementById('f-version').value.trim() : '',
+    notes: status==='done' ? document.getElementById('f-notes').value.trim() : '',
+  };
+  const ts = nowISO();
+  if(editingId){
+    Object.assign(cards.find(x=>x.id===editingId), data, {updatedAt: ts});
+  } else {
+    const maxOrder = cards.reduce((m,c)=>Math.max(m,c.order||0),0);
+    cards.push({id: nextId(data.type), ...data, archived:false, order:maxOrder+10, createdAt:ts, updatedAt:ts});
+  }
+  if(ownerVal && !owners.includes(ownerVal)){ owners.push(ownerVal); await persistOwners(); }
+  await persistCards();
+  reconcileVersionFilter();
+  buildControls();
+  closeModal();
+  render();
+};
+document.getElementById('archiveBtn').onclick = async ()=>{
+  if(!editingId) return;
+  const c = cards.find(x=>x.id===editingId);
+  c.archived = true; c.updatedAt = nowISO();
+  await persistCards(); closeModal(); render();
+};
+document.getElementById('restoreBtn').onclick = async ()=>{
+  if(!editingId) return;
+  const c = cards.find(x=>x.id===editingId);
+  c.archived = false; c.updatedAt = nowISO();
+  await persistCards(); closeModal(); render();
+};
+document.getElementById('deleteBtn').onclick = async ()=>{
+  if(!editingId) return;
+  const c = cards.find(x=>x.id===editingId);
+  if(!c) return;
+  const confirmed = await showConfirmModal('Delete Item', `Are you sure you want to permanently delete "${c.title}" (${c.id})?`, {confirmText: 'Delete', danger: true});
+  if(!confirmed) return;
+  cards = cards.filter(x=>x.id!==editingId);
+  await persistCards(); closeModal(); render();
+};
+
+/* ---------- owners management ---------- */
+const ownersOverlay = document.getElementById('ownersOverlay');
+document.getElementById('ownersBtn').onclick = ()=>{ renderOwnersList(); ownersOverlay.classList.add('open'); };
+document.getElementById('closeOwnersBtn').onclick = ()=> ownersOverlay.classList.remove('open');
+ownersOverlay.addEventListener('click', e=>{ if(e.target===ownersOverlay) ownersOverlay.classList.remove('open'); });
+function renderOwnersList(){
+  const el = document.getElementById('ownersListEl');
+  if(owners.length===0){ el.innerHTML = '<p class="owners-empty">No owners yet — add one below.</p>'; return; }
+  el.innerHTML = '';
+  owners.forEach(o=>{
+    const row = document.createElement('div');
+    row.className = 'owner-row';
+    row.innerHTML = `<span>${escapeHtml(o)}</span><button>Remove</button>`;
+    row.querySelector('button').onclick = async ()=>{
+      owners = owners.filter(x=>x!==o);
+      await persistOwners();
+      renderOwnersList();
+    };
+    el.appendChild(row);
+  });
+}
+document.getElementById('addOwnerBtn').onclick = async ()=>{
+  const input = document.getElementById('newOwnerInput');
+  const val = input.value.trim();
+  if(!val) return;
+  if(!owners.includes(val)) owners.push(val);
+  await persistOwners();
+  input.value='';
+  renderOwnersList();
+};
+
+/* ---------- import / export / templates ---------- */
+function showIoStatus(msg){
+  const el = document.getElementById('ioStatus');
+  el.textContent = msg;
+  setTimeout(()=>{ if(el.textContent===msg) el.textContent=''; }, 3500);
+}
+function downloadBlob(content, filename, mime){
+  const blob = new Blob([content], {type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+}
+document.getElementById('importToggleBtn').onclick = ()=> document.getElementById('importPanel').classList.toggle('open');
+
+document.getElementById('exportCsvBtn').onclick = ()=>{
+  const csv = Papa.unparse({ fields: CSV_COLS, data: cards.map(c=> CSV_COLS.map(k=> c[k]===undefined||c[k]===null?'':c[k])) });
+  downloadBlob(csv, 'project-board.csv', 'text/csv');
+  showIoStatus('Exported project-board.csv');
+};
+document.getElementById('exportJsonBtn').onclick = ()=>{
+  downloadBlob(JSON.stringify(cards, null, 2), 'project-board.json', 'application/json');
+  showIoStatus('Exported project-board.json');
+};
+document.getElementById('tplCsvBtn').onclick = ()=>{
+  downloadBlob(Papa.unparse({fields:CSV_COLS, data:[]}), 'project-board-template.csv', 'text/csv');
+  showIoStatus('Downloaded CSV template');
+};
+document.getElementById('exCsvBtn').onclick = ()=>{
+  const example = [
+    {id:'F-101',type:'feature',title:'Example feature',desc:'Short description of what it does.',priority:'high',status:'planned',owner:'Tim Nova',blocked:'',version:'',notes:'',archived:'false',order:0,createdAt:nowISO(),updatedAt:nowISO()},
+    {id:'B-102',type:'bug',title:'Example bug fix',desc:'What is broken and where.',priority:'med',status:'blocked',owner:'Tim IT Dominus4d',blocked:'API',version:'',notes:'',archived:'false',order:10,createdAt:nowISO(),updatedAt:nowISO()},
+    {id:'F-103',type:'feature',title:'Example shipped feature',desc:'Already live in production.',priority:'low',status:'done',owner:'Tim IT Live Chat',blocked:'',version:'v1.2.0',notes:'Shipped block-by-username in chat.',archived:'false',order:20,createdAt:nowISO(),updatedAt:nowISO()},
+  ];
+  const csv = Papa.unparse({fields:CSV_COLS, data: example.map(r=>CSV_COLS.map(k=>r[k]))});
+  downloadBlob(csv, 'project-board-example.csv', 'text/csv');
+  showIoStatus('Downloaded CSV example');
+};
+document.getElementById('tplJsonBtn').onclick = ()=>{
+  const tpl = [Object.fromEntries(CSV_COLS.map(k=>[k, k==='archived'?false:(k==='order'?0:'')]))];
+  downloadBlob(JSON.stringify(tpl, null, 2), 'project-board-template.json', 'application/json');
+  showIoStatus('Downloaded JSON template');
+};
+document.getElementById('exJsonBtn').onclick = ()=>{
+  const example = [
+    {id:'F-101',type:'feature',title:'Example feature',desc:'Short description of what it does.',priority:'high',status:'planned',owner:'Tim Nova',blocked:'',version:'',notes:'',archived:false,order:0,createdAt:nowISO(),updatedAt:nowISO()},
+    {id:'B-102',type:'bug',title:'Example bug fix',desc:'What is broken and where.',priority:'med',status:'blocked',owner:'Tim IT Dominus4d',blocked:'API',version:'',notes:'',archived:false,order:10,createdAt:nowISO(),updatedAt:nowISO()},
+  ];
+  downloadBlob(JSON.stringify(example, null, 2), 'project-board-example.json', 'application/json');
+  showIoStatus('Downloaded JSON example');
+};
+document.getElementById('chooseFileBtn').onclick = ()=> document.getElementById('importFile').click();
+
+let pendingImportData = null;
+
+function openImportPreviewModal(addedRows, updatedRows, unchangedCount, totalRows){
+  const summaryEl = document.getElementById('importPreviewSummary');
+  summaryEl.textContent = `Total file rows: ${totalRows} | New items: ${addedRows.length} | Updated items: ${updatedRows.length} | Unchanged: ${unchangedCount}`;
+
+  const noticeEl = document.getElementById('importPreviewNotice');
+  const tbody = document.getElementById('importPreviewBody');
+  tbody.innerHTML = '';
+
+  const allChanges = [
+    ...addedRows.map(r=> ({type:'NEW', id: r.id, title: r.normalized.title, details: `New ${r.normalized.type} item`})),
+    ...updatedRows.map(r=> ({type:'UPDATE', id: r.existing.id, title: r.normalized.title, details: `Changed: ${r.changes.join(', ')}`}))
+  ];
+
+  const PREVIEW_LIMIT = 15;
+  if(allChanges.length > PREVIEW_LIMIT){
+    noticeEl.style.display = 'block';
+    noticeEl.textContent = `⚡ Showing first ${PREVIEW_LIMIT} of ${allChanges.length} changes to optimize performance. All ${allChanges.length} changes will be applied upon confirmation.`;
+  } else {
+    noticeEl.style.display = 'none';
+  }
+
+  const previewList = allChanges.slice(0, PREVIEW_LIMIT);
+  previewList.forEach(item=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="padding:6px 8px;"><span class="type-pill ${item.type==='NEW'?'feature':'bug'}">${item.type}</span></td>
+      <td style="padding:6px 8px;font-family:'IBM Plex Mono',monospace;font-size:11px;">${escapeHtml(item.id)}</td>
+      <td style="padding:6px 8px;font-weight:600;">${escapeHtml(item.title)}</td>
+      <td style="padding:6px 8px;color:var(--text-dim);font-size:11px;">${escapeHtml(item.details)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('importPreviewOverlay').classList.add('open');
+}
+
+document.getElementById('importCancelBtn').onclick = ()=>{
+  document.getElementById('importPreviewOverlay').classList.remove('open');
+  if(pendingImportData && pendingImportData.fileInput) pendingImportData.fileInput.value = '';
+  pendingImportData = null;
+};
+
+document.getElementById('importConfirmBtn').onclick = async ()=>{
+  if(!pendingImportData) return;
+  const { addedRows, updatedRows, fileInput } = pendingImportData;
+  let added = 0, updated = 0;
+  const ts = nowISO();
+
+  updatedRows.forEach(({ existing, normalized })=>{
+    Object.assign(existing, normalized, {updatedAt: ts});
+    if(normalized.owner && !owners.includes(normalized.owner)) owners.push(normalized.owner);
+    updated++;
+  });
+
+  addedRows.forEach(({ id, normalized })=>{
+    cards.push({id, ...normalized, createdAt: normalized.createdAt || ts, updatedAt: normalized.updatedAt || ts});
+    if(normalized.owner && !owners.includes(normalized.owner)) owners.push(normalized.owner);
+    added++;
+  });
+
+  bumpNextNum();
+  await persistCards();
+  await persistOwners();
+  reconcileVersionFilter();
+  buildControls();
+  render();
+  showIoStatus(`Imported: ${added} added, ${updated} updated`);
+  document.getElementById('importPreviewOverlay').classList.remove('open');
+  if(fileInput) fileInput.value = '';
+  pendingImportData = null;
+};
+
+document.getElementById('importFile').onchange = async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const text = await file.text();
+  let rows = [];
+  try{
+    if(file.name.toLowerCase().endsWith('.json')){
+      const parsed = JSON.parse(text);
+      rows = Array.isArray(parsed) ? parsed : [];
+    } else {
+      const parsed = Papa.parse(text, {header:true, skipEmptyLines:true});
+      rows = parsed.data;
+    }
+  }catch(err){ showIoStatus('Import failed: could not parse file'); e.target.value=''; return; }
+
+  if(!rows.length){ showIoStatus('Import failed: file is empty'); e.target.value=''; return; }
+
+  const ts = nowISO();
+  let addedRows = [];
+  let updatedRows = [];
+  let unchangedCount = 0;
+
+  rows.forEach(r=>{
+    if(!r || (!r.title && !r.id)) return;
+    const normalized = {
+      type: (r.type==='bug'?'bug':'feature'),
+      title: r.title || 'Untitled',
+      desc: r.desc || '',
+      priority: ['high','med','low'].includes(r.priority) ? r.priority : 'med',
+      status: STATUS_INDEX[r.status]!==undefined ? r.status : 'idea',
+      owner: r.owner || '',
+      blocked: r.blocked || '',
+      version: r.version || '',
+      notes: r.notes || '',
+      archived: r.archived===true || r.archived==='true',
+      order: r.order!==undefined && r.order!=='' ? parseFloat(r.order) : 0,
+      createdAt: r.createdAt || ts,
+      updatedAt: r.updatedAt || ts,
+    };
+    let existing = r.id ? cards.find(c=>c.id===r.id) : null;
+    if(existing){
+      let changes = [];
+      ['title','type','priority','status','owner','blocked','version','notes','archived'].forEach(k=>{
+        if(String(existing[k]||'') !== String(normalized[k]||'')) changes.push(k);
+      });
+      if(changes.length > 0){
+        updatedRows.push({ existing, normalized, changes });
+      } else {
+        unchangedCount++;
+      }
+    } else {
+      const id = (r.id && String(r.id).trim()) ? String(r.id).trim() : nextId(normalized.type);
+      addedRows.push({ id, normalized });
+    }
+  });
+
+  const totalChanges = addedRows.length + updatedRows.length;
+  if(totalChanges === 0 && unchangedCount > 0){
+    showIoStatus(`Import preview: All ${unchangedCount} items in file are identical to existing items.`);
+    e.target.value = '';
+    return;
+  }
+
+  pendingImportData = { addedRows, updatedRows, totalRows: rows.length, fileInput: e.target };
+  openImportPreviewModal(addedRows, updatedRows, unchangedCount, rows.length);
+};
+
+loadAll();
+</script>
+</body>
+</html>
