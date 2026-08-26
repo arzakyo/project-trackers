@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Dominus4d Roadmap — Explorer</title>
+<title>Dominus 4D Project Board</title>
+<meta name="description" content="Dominus 4D Project Board - Feature & Bug Tracker"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -30,6 +31,7 @@
   .topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px;}
   .brand-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);margin:0 0 4px;}
   .brand-title{font-size:22px;font-weight:700;margin:0;letter-spacing:-.01em;}
+  .brand-desc{font-size:12px;color:var(--text-dim);margin:3px 0 0;}
   select,input,textarea,button{font-family:inherit;}
   .item-count{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-faint);margin:0 0 14px;}
 
@@ -201,8 +203,9 @@
 <div class="app">
   <div class="topbar">
     <div>
-      <p class="brand-eyebrow">Dominus4d &middot; admin panel</p>
-      <h1 class="brand-title">Roadmap Explorer</h1>
+      <p class="brand-eyebrow">Dominus 4D</p>
+      <h1 class="brand-title">Project Board</h1>
+      <p class="brand-desc">Feature & Bug Tracker</p>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
       <span class="io-status" id="ioStatus"></span>
@@ -360,6 +363,38 @@
     <div class="modal-actions">
       <div class="left"><button class="btn small" id="importCancelBtn">Cancel</button></div>
       <div class="right"><button class="btn primary small" id="importConfirmBtn">Confirm Import</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="promptOverlay" style="z-index:100;">
+  <div class="modal" style="max-width:380px;">
+    <h3 id="promptTitle">Input Required</h3>
+    <p id="promptMessage" style="font-size:12px;color:var(--text-dim);margin:-4px 0 12px;line-height:1.4;"></p>
+    <div class="field">
+      <input type="text" id="promptInput" value="" autocomplete="off">
+      <textarea id="promptTextarea" class="hidden" style="min-height:70px;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <div class="left"></div>
+      <div class="right">
+        <button class="btn small" id="promptCancelBtn">Cancel</button>
+        <button class="btn primary small" id="promptOkBtn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="confirmOverlay" style="z-index:100;">
+  <div class="modal" style="max-width:380px;">
+    <h3 id="confirmTitle">Confirm Action</h3>
+    <p id="confirmMessage" style="font-size:13px;color:var(--text);margin:-4px 0 16px;line-height:1.45;"></p>
+    <div class="modal-actions">
+      <div class="left"></div>
+      <div class="right">
+        <button class="btn small" id="confirmCancelBtn">Cancel</button>
+        <button class="btn danger small" id="confirmOkBtn">Confirm</button>
+      </div>
     </div>
   </div>
 </div>
@@ -936,7 +971,7 @@ function showContextMenu(e, item, field){
     customBtn.textContent = '✏ Custom owner...';
     customBtn.onclick = async ()=>{
       hideContextMenu();
-      const val = prompt('Enter owner name:', item.owner || '');
+      const val = await showPromptModal('Custom Owner', 'Enter owner name:', item.owner || '');
       if(val!==null){
         item.owner = val.trim();
         if(item.owner && !owners.includes(item.owner)){ owners.push(item.owner); await persistOwners(); }
@@ -967,7 +1002,7 @@ function showContextMenu(e, item, field){
     verBtn.innerHTML = `🏷️ Change Version Value (current: ${escapeHtml(item.version||'None')})`;
     verBtn.onclick = async ()=>{
       hideContextMenu();
-      const val = prompt('Enter release version (e.g. v1.2.0):', item.version || '');
+      const val = await showPromptModal('Release Version', 'Enter release version (e.g. v1.2.0):', item.version || '');
       if(val!==null){
         item.version = val.trim();
         item.updatedAt = nowISO();
@@ -984,7 +1019,7 @@ function showContextMenu(e, item, field){
     notesBtn.innerHTML = `📝 Edit Release Notes`;
     notesBtn.onclick = async ()=>{
       hideContextMenu();
-      const val = prompt('Edit release notes for ' + (item.version||item.id) + ':', item.notes || '');
+      const val = await showPromptModal('Release Notes', 'Edit release notes for ' + (item.version||item.id) + ':', item.notes || '', {multiline:true});
       if(val!==null){
         item.notes = val.trim();
         item.updatedAt = nowISO();
@@ -1317,7 +1352,8 @@ function renderTableRow(c, path, leafList){
     delBtn.className='btn icon small danger';
     delBtn.textContent='Delete';
     delBtn.onclick = async ()=>{
-      if(!confirm(`Are you sure you want to permanently delete "${c.title}" (${c.id})?`)) return;
+      const confirmed = await showConfirmModal('Delete Item', `Are you sure you want to permanently delete "${c.title}" (${c.id})?`, {confirmText: 'Delete', danger: true});
+      if(!confirmed) return;
       cards = cards.filter(x=>x.id!==c.id);
       await persistCards(); render();
     };
@@ -1353,6 +1389,110 @@ function attachFlatTableDnd(tbody, list){
 }
 
 /* ---------- modal ---------- */
+function showPromptModal(title, message, defaultValue = '', options = {}) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('promptOverlay');
+    const titleEl = document.getElementById('promptTitle');
+    const msgEl = document.getElementById('promptMessage');
+    const inputEl = document.getElementById('promptInput');
+    const textareaEl = document.getElementById('promptTextarea');
+    const cancelBtn = document.getElementById('promptCancelBtn');
+    const okBtn = document.getElementById('promptOkBtn');
+
+    titleEl.textContent = title || 'Input Required';
+    msgEl.textContent = message || '';
+
+    const isMultiline = !!options.multiline;
+    if (isMultiline) {
+      inputEl.classList.add('hidden');
+      textareaEl.classList.remove('hidden');
+      textareaEl.value = defaultValue;
+    } else {
+      textareaEl.classList.add('hidden');
+      inputEl.classList.remove('hidden');
+      inputEl.value = defaultValue;
+    }
+
+    const targetInput = isMultiline ? textareaEl : inputEl;
+
+    function cleanup(val) {
+      overlay.classList.remove('open');
+      okBtn.onclick = null;
+      cancelBtn.onclick = null;
+      overlay.onclick = null;
+      window.removeEventListener('keydown', handleKey);
+      resolve(val);
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Escape') {
+        cleanup(null);
+      } else if (e.key === 'Enter' && (!isMultiline || e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        cleanup(targetInput.value);
+      }
+    }
+
+    okBtn.onclick = () => cleanup(targetInput.value);
+    cancelBtn.onclick = () => cleanup(null);
+    overlay.onclick = (e) => { if (e.target === overlay) cleanup(null); };
+    window.addEventListener('keydown', handleKey);
+
+    overlay.classList.add('open');
+    setTimeout(() => {
+      targetInput.focus();
+      targetInput.select();
+    }, 50);
+  });
+}
+
+function showConfirmModal(title, message, options = {}) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('confirmOverlay');
+    const titleEl = document.getElementById('confirmTitle');
+    const msgEl = document.getElementById('confirmMessage');
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+    const okBtn = document.getElementById('confirmOkBtn');
+
+    titleEl.textContent = title || 'Confirm Action';
+    msgEl.textContent = message || 'Are you sure?';
+    okBtn.textContent = options.confirmText || 'Confirm';
+    if (options.danger !== false) {
+      okBtn.className = 'btn danger small';
+    } else {
+      okBtn.className = 'btn primary small';
+    }
+
+    function cleanup(val) {
+      overlay.classList.remove('open');
+      okBtn.onclick = null;
+      cancelBtn.onclick = null;
+      overlay.onclick = null;
+      window.removeEventListener('keydown', handleKey);
+      resolve(val);
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Escape') {
+        cleanup(false);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        cleanup(true);
+      }
+    }
+
+    okBtn.onclick = () => cleanup(true);
+    cancelBtn.onclick = () => cleanup(false);
+    overlay.onclick = (e) => { if (e.target === overlay) cleanup(false); };
+    window.addEventListener('keydown', handleKey);
+
+    overlay.classList.add('open');
+    setTimeout(() => {
+      okBtn.focus();
+    }, 50);
+  });
+}
+
 const overlay = document.getElementById('overlay');
 const statusSelect = document.getElementById('f-status');
 STATUSES.forEach(s=>{ const o=document.createElement('option'); o.value=s.key; o.textContent=s.label; statusSelect.appendChild(o); });
@@ -1446,7 +1586,9 @@ document.getElementById('restoreBtn').onclick = async ()=>{
 document.getElementById('deleteBtn').onclick = async ()=>{
   if(!editingId) return;
   const c = cards.find(x=>x.id===editingId);
-  if(c && !confirm(`Are you sure you want to permanently delete "${c.title}" (${c.id})?`)) return;
+  if(!c) return;
+  const confirmed = await showConfirmModal('Delete Item', `Are you sure you want to permanently delete "${c.title}" (${c.id})?`, {confirmText: 'Delete', danger: true});
+  if(!confirmed) return;
   cards = cards.filter(x=>x.id!==editingId);
   await persistCards(); closeModal(); render();
 };
@@ -1499,15 +1641,15 @@ document.getElementById('importToggleBtn').onclick = ()=> document.getElementByI
 
 document.getElementById('exportCsvBtn').onclick = ()=>{
   const csv = Papa.unparse({ fields: CSV_COLS, data: cards.map(c=> CSV_COLS.map(k=> c[k]===undefined||c[k]===null?'':c[k])) });
-  downloadBlob(csv, 'roadmap.csv', 'text/csv');
-  showIoStatus('Exported roadmap.csv');
+  downloadBlob(csv, 'project-board.csv', 'text/csv');
+  showIoStatus('Exported project-board.csv');
 };
 document.getElementById('exportJsonBtn').onclick = ()=>{
-  downloadBlob(JSON.stringify(cards, null, 2), 'roadmap.json', 'application/json');
-  showIoStatus('Exported roadmap.json');
+  downloadBlob(JSON.stringify(cards, null, 2), 'project-board.json', 'application/json');
+  showIoStatus('Exported project-board.json');
 };
 document.getElementById('tplCsvBtn').onclick = ()=>{
-  downloadBlob(Papa.unparse({fields:CSV_COLS, data:[]}), 'roadmap-template.csv', 'text/csv');
+  downloadBlob(Papa.unparse({fields:CSV_COLS, data:[]}), 'project-board-template.csv', 'text/csv');
   showIoStatus('Downloaded CSV template');
 };
 document.getElementById('exCsvBtn').onclick = ()=>{
@@ -1517,12 +1659,12 @@ document.getElementById('exCsvBtn').onclick = ()=>{
     {id:'F-103',type:'feature',title:'Example shipped feature',desc:'Already live in production.',priority:'low',status:'done',owner:'Tim IT Live Chat',blocked:'',version:'v1.2.0',notes:'Shipped block-by-username in chat.',archived:'false',order:20,createdAt:nowISO(),updatedAt:nowISO()},
   ];
   const csv = Papa.unparse({fields:CSV_COLS, data: example.map(r=>CSV_COLS.map(k=>r[k]))});
-  downloadBlob(csv, 'roadmap-example.csv', 'text/csv');
+  downloadBlob(csv, 'project-board-example.csv', 'text/csv');
   showIoStatus('Downloaded CSV example');
 };
 document.getElementById('tplJsonBtn').onclick = ()=>{
   const tpl = [Object.fromEntries(CSV_COLS.map(k=>[k, k==='archived'?false:(k==='order'?0:'')]))];
-  downloadBlob(JSON.stringify(tpl, null, 2), 'roadmap-template.json', 'application/json');
+  downloadBlob(JSON.stringify(tpl, null, 2), 'project-board-template.json', 'application/json');
   showIoStatus('Downloaded JSON template');
 };
 document.getElementById('exJsonBtn').onclick = ()=>{
@@ -1530,7 +1672,7 @@ document.getElementById('exJsonBtn').onclick = ()=>{
     {id:'F-101',type:'feature',title:'Example feature',desc:'Short description of what it does.',priority:'high',status:'planned',owner:'Tim Nova',blocked:'',version:'',notes:'',archived:false,order:0,createdAt:nowISO(),updatedAt:nowISO()},
     {id:'B-102',type:'bug',title:'Example bug fix',desc:'What is broken and where.',priority:'med',status:'blocked',owner:'Tim IT Dominus4d',blocked:'API',version:'',notes:'',archived:false,order:10,createdAt:nowISO(),updatedAt:nowISO()},
   ];
-  downloadBlob(JSON.stringify(example, null, 2), 'roadmap-example.json', 'application/json');
+  downloadBlob(JSON.stringify(example, null, 2), 'project-board-example.json', 'application/json');
   showIoStatus('Downloaded JSON example');
 };
 document.getElementById('chooseFileBtn').onclick = ()=> document.getElementById('importFile').click();
