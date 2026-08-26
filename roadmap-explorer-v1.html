@@ -87,8 +87,9 @@
   .chevron.collapsed{transform:rotate(-90deg);}
   .node-label{font-size:13px;font-weight:700;}
   .node-count{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--text-faint);background:var(--panel-2);padding:1px 8px;border-radius:999px;}
-  .node-children{padding-left:20px;margin-top:6px;max-height:3000px;opacity:1;overflow:hidden;transition:max-height 100ms ease-in-out, opacity 100ms ease-in-out, margin 100ms ease-in-out, padding 100ms ease-in-out;}
-  .node-children.hidden{display:block !important;max-height:0 !important;opacity:0;margin-top:0;padding-top:0;padding-bottom:0;pointer-events:none;}
+  .node-children{display:grid;grid-template-rows:1fr;transition:grid-template-rows 100ms ease-in-out, opacity 100ms ease-in-out, margin-top 100ms ease-in-out;opacity:1;margin-top:6px;padding-left:20px;}
+  .node-children-inner{overflow:hidden;}
+  .node-children.collapsed{grid-template-rows:0fr;opacity:0;margin-top:0;pointer-events:none;}
 
   .leaf{display:flex;flex-wrap:wrap;gap:8px;padding:10px 0 2px;border-radius:8px;transition:background .15s, outline .15s;}
   .leaf.drag-over{background:rgba(94,234,212,.08);outline:2px dashed var(--accent-progress);outline-offset:-2px;}
@@ -146,7 +147,17 @@
   table.roadmap-table th:hover{color:var(--text-dim);}
   table.roadmap-table th.sorted{color:var(--accent-progress);}
   table.roadmap-table td{padding:8px 10px;border-bottom:1px solid var(--border-soft);vertical-align:top;}
-  table.roadmap-table tr.drag-row{cursor:grab;}
+  table.roadmap-table tr.drag-row, table.roadmap-table tr.group-row{cursor:grab;transition:opacity 100ms ease-in-out, background 100ms ease-in-out;opacity:1;}
+  table.roadmap-table td{padding:8px 10px;border-bottom:1px solid var(--border-soft);vertical-align:middle;transition:padding 100ms ease-in-out, line-height 100ms ease-in-out, font-size 100ms ease-in-out, opacity 100ms ease-in-out, border-width 100ms ease-in-out;}
+  table.roadmap-table td *{transition:font-size 100ms ease-in-out, opacity 100ms ease-in-out, margin 100ms ease-in-out, padding 100ms ease-in-out, max-height 100ms ease-in-out;}
+
+  table.roadmap-table tr.row-collapsing td{padding-top:0 !important;padding-bottom:0 !important;line-height:0 !important;font-size:0 !important;opacity:0 !important;border-bottom-width:0 !important;}
+  table.roadmap-table tr.row-collapsing td *{opacity:0 !important;font-size:0 !important;max-height:0 !important;margin-top:0 !important;margin-bottom:0 !important;padding-top:0 !important;padding-bottom:0 !important;}
+
+  table.roadmap-table tr.row-expanding td{padding-top:0 !important;padding-bottom:0 !important;line-height:0 !important;font-size:0 !important;opacity:0 !important;border-bottom-width:0 !important;}
+  table.roadmap-table tr.row-expanding td *{opacity:0 !important;font-size:0 !important;max-height:0 !important;margin-top:0 !important;margin-bottom:0 !important;padding-top:0 !important;padding-bottom:0 !important;}
+
+  tr.group-collapsed-hidden{display:none !important;}
   table.roadmap-table tr.dragging{opacity:.4;}
   table.roadmap-table tr.archived-row{opacity:.55;}
   table.roadmap-table tr:hover td{background:var(--panel-2);}
@@ -610,12 +621,45 @@ document.getElementById('filterToggleBtn').onclick = ()=>{
   document.getElementById('filterToggleBtn').classList.toggle('active', open);
 };
 document.getElementById('expandAllBtn').onclick = ()=>{
-  if(view.view==='table') collapsedTable.clear(); else collapsedCard.clear();
-  render();
+  if(view.view==='table'){
+    collapsedTable.clear();
+    const body = document.getElementById('tableBody');
+    body.querySelectorAll('.chevron').forEach(c => c.classList.remove('collapsed'));
+    body.querySelectorAll('tr').forEach(r => {
+      if(r.classList.contains('group-collapsed-hidden')){
+        r.classList.add('row-expanding');
+        r.classList.remove('group-collapsed-hidden');
+        requestAnimationFrame(()=>{
+          r.classList.remove('row-expanding');
+        });
+      }
+    });
+  } else {
+    collapsedCard.clear();
+    const tree = document.getElementById('tree');
+    tree.querySelectorAll('.node-children').forEach(el => el.classList.remove('collapsed'));
+    tree.querySelectorAll('.chevron').forEach(el => el.classList.remove('collapsed'));
+  }
 };
 document.getElementById('collapseAllBtn').onclick = ()=>{
-  if(view.view==='table') collapsedTable = new Set(knownBranchKeysTable); else collapsedCard = new Set(knownBranchKeysCard);
-  render();
+  if(view.view==='table'){
+    collapsedTable = new Set(knownBranchKeysTable);
+    const body = document.getElementById('tableBody');
+    body.querySelectorAll('.chevron').forEach(c => c.classList.add('collapsed'));
+    const rowsToHide = body.querySelectorAll('tr[data-parent-paths]');
+    rowsToHide.forEach(r => r.classList.add('row-collapsing'));
+    setTimeout(()=>{
+      rowsToHide.forEach(r => {
+        r.classList.remove('row-collapsing');
+        r.classList.add('group-collapsed-hidden');
+      });
+    }, 100);
+  } else {
+    collapsedCard = new Set(knownBranchKeysCard);
+    const tree = document.getElementById('tree');
+    tree.querySelectorAll('.node-children').forEach(el => el.classList.add('collapsed'));
+    tree.querySelectorAll('.chevron').forEach(el => el.classList.add('collapsed'));
+  }
 };
 
 /* ---------- filter + sort ---------- */
@@ -755,7 +799,22 @@ function renderCardNode(node, path){
     head.className = 'node-head';
     head.style.setProperty('--nodecolor', g.meta.color);
     head.innerHTML = `<span class="chevron ${isCollapsed?'collapsed':''}">▾</span><span class="node-label">${escapeHtml(g.meta.label)}</span><span class="node-count">${g.cards.length}</span>`;
-    head.addEventListener('click', ()=>{ isCollapsed ? collapsedCard.delete(pathKey) : collapsedCard.add(pathKey); render(); });
+
+    const childWrap = document.createElement('div');
+    childWrap.className = 'node-children' + (isCollapsed?' collapsed':'');
+    const childInner = document.createElement('div');
+    childInner.className = 'node-children-inner';
+    childInner.appendChild(renderCardNode(g.child, groupPath));
+    childWrap.appendChild(childInner);
+
+    head.addEventListener('click', ()=>{
+      const isNowCollapsed = childWrap.classList.toggle('collapsed');
+      const chev = head.querySelector('.chevron');
+      if(chev) chev.classList.toggle('collapsed', isNowCollapsed);
+      if(isNowCollapsed) collapsedCard.add(pathKey);
+      else collapsedCard.delete(pathKey);
+    });
+
     head.addEventListener('dragover', e=>{ e.preventDefault(); head.classList.add('drop-target-active'); });
     head.addEventListener('dragleave', ()=> head.classList.remove('drop-target-active'));
     head.addEventListener('drop', async e=>{
@@ -763,10 +822,8 @@ function renderCardNode(node, path){
       const id = e.dataTransfer.getData('text/plain');
       if(id) await reorderAndAssign(id, groupPath, pathKey, g.cards);
     });
+
     nodeEl.appendChild(head);
-    const childWrap = document.createElement('div');
-    childWrap.className = 'node-children' + (isCollapsed?' hidden':'');
-    childWrap.appendChild(renderCardNode(g.child, groupPath));
     nodeEl.appendChild(childWrap);
     frag.appendChild(nodeEl);
   });
@@ -1110,12 +1167,26 @@ function renderTableView(filtered){
   }
 }
 
+function getAncestorPathKeys(path){
+  const keys = [];
+  for(let i = 1; i <= path.length; i++){
+    keys.push(path.slice(0, i).join('>'));
+  }
+  return keys;
+}
+
 function renderTableNode(node, path, body){
   if(node.leaf){
     const list = [...node.cards].sort(compareCards);
-    const leafKey = path.join('>');
     if(list.length===0) return;
-    list.forEach(c=> body.appendChild(renderTableRow(c, path, list)));
+    const parentPathStr = getAncestorPathKeys(path).join('|');
+    list.forEach(c=> {
+      const tr = renderTableRow(c, path, list);
+      if(parentPathStr) tr.setAttribute('data-parent-paths', parentPathStr);
+      const isHidden = getAncestorPathKeys(path).some(pk => collapsedTable.has(pk));
+      if(isHidden) tr.classList.add('group-collapsed-hidden');
+      body.appendChild(tr);
+    });
     return;
   }
   node.groups.forEach(g=>{
@@ -1126,11 +1197,55 @@ function renderTableNode(node, path, body){
     const tr = document.createElement('tr');
     tr.className = 'group-row';
     tr.style.setProperty('--nodecolor', g.meta.color);
+    tr.setAttribute('data-pathkey', pathKey);
+    const parentPathStr = getAncestorPathKeys(path).join('|');
+    if(parentPathStr) tr.setAttribute('data-parent-paths', parentPathStr);
+    const isHidden = getAncestorPathKeys(path).some(pk => collapsedTable.has(pk));
+    if(isHidden) tr.classList.add('group-collapsed-hidden');
+
     const td = document.createElement('td');
     td.colSpan = colCount();
     td.innerHTML = `<span class="chevron ${isCollapsed?'collapsed':''}" style="display:inline-block;margin-right:6px;">▾</span>${escapeHtml(g.meta.label)}<span class="node-count">${g.cards.length}</span>`;
     tr.appendChild(td);
-    tr.addEventListener('click', ()=>{ isCollapsed ? collapsedTable.delete(pathKey) : collapsedTable.add(pathKey); render(); });
+
+    tr.addEventListener('click', (e)=>{
+      if(e.target.closest('.has-ctx-menu')) return;
+      e.stopPropagation();
+      const isNowCollapsed = !collapsedTable.has(pathKey);
+      if(isNowCollapsed) collapsedTable.add(pathKey);
+      else collapsedTable.delete(pathKey);
+
+      const chev = tr.querySelector('.chevron');
+      if(chev) chev.classList.toggle('collapsed', isNowCollapsed);
+
+      const childRows = Array.from(body.querySelectorAll('tr[data-parent-paths]')).filter(row => {
+        const parentPaths = (row.getAttribute('data-parent-paths') || '').split('|');
+        return parentPaths.includes(pathKey);
+      });
+
+      if(isNowCollapsed){
+        childRows.forEach(r => r.classList.add('row-collapsing'));
+        setTimeout(()=>{
+          childRows.forEach(r => {
+            r.classList.remove('row-collapsing');
+            r.classList.add('group-collapsed-hidden');
+          });
+        }, 100);
+      } else {
+        childRows.forEach(r => {
+          const parentPaths = (r.getAttribute('data-parent-paths') || '').split('|');
+          const hasOtherCollapsedAncestor = parentPaths.some(p => p !== pathKey && collapsedTable.has(p));
+          if(!hasOtherCollapsedAncestor){
+            r.classList.add('row-expanding');
+            r.classList.remove('group-collapsed-hidden');
+            requestAnimationFrame(()=>{
+              r.classList.remove('row-expanding');
+            });
+          }
+        });
+      }
+    });
+
     tr.addEventListener('dragover', e=>{ e.preventDefault(); tr.classList.add('drop-target-active'); });
     tr.addEventListener('dragleave', ()=> tr.classList.remove('drop-target-active'));
     tr.addEventListener('drop', async e=>{
@@ -1139,7 +1254,7 @@ function renderTableNode(node, path, body){
       if(id) await reorderAndAssign(id, groupPath, pathKey, g.cards);
     });
     body.appendChild(tr);
-    if(!isCollapsed) renderTableNode(g.child, groupPath, body);
+    renderTableNode(g.child, groupPath, body);
   });
 }
 
