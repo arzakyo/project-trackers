@@ -1,9 +1,28 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "project-trackers-demo",
+  "name": "project-trackers",
   "main": "src/index.ts",
   "compatibility_date": "2025-07-18",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "assets": {
     "directory": "./public"
-  }
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "REALTIME_ROOM",
+        "class_name": "RealtimeRoomDO"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_classes": [
+        "RealtimeRoomDO"
+      ]
+    }
+  ]
 }

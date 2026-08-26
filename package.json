@@ -10,7 +10,30 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260826.1",
     "@types/bun": "^1.4.0",
+    "@types/node": "^26.3.0",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-react": "^6.1.0",
+    "prisma": "6.4.0",
     "typescript": "^7.0.2",
+    "vinxi": "^0.5.11",
+    "vite": "^8.2.2",
     "wrangler": "^4.126.0"
+  },
+  "dependencies": {
+    "@better-auth/prisma-adapter": "^1.7.1",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "6.4.0",
+    "@tanstack/react-router": "^1.170.32",
+    "@tanstack/react-start": "^1.168.49",
+    "@tanstack/start": "^1.120.20",
+    "better-auth": "^1.7.1",
+    "pg": "^8.23.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "ws": "^8.21.3",
+    "zod": "^4.4.3"
   }
 }
