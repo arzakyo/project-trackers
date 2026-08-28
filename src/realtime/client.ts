@@ -1,12 +1,12 @@
 import { IRealtimeAdapter, RealtimeDriverType } from "./types";
-import { CloudflareDOAdapter } from "./adapters/cf-do-adapter";
+import { BroadcastChannelAdapter } from "./adapters/broadcast-adapter";
 import { StandardWebSocketAdapter } from "./adapters/websocket-adapter";
 import { SSEAdapter } from "./adapters/sse-adapter";
 
 export function createRealtimeAdapter(driver?: RealtimeDriverType): IRealtimeAdapter {
   const configuredDriver =
     driver ||
-    (typeof process !== "undefined" && process.env?.VITE_REALTIME_DRIVER as RealtimeDriverType) ||
+    (typeof process !== "undefined" && (process.env?.VITE_REALTIME_DRIVER as RealtimeDriverType)) ||
     "durable-object";
 
   switch (configuredDriver) {
@@ -16,7 +16,7 @@ export function createRealtimeAdapter(driver?: RealtimeDriverType): IRealtimeAda
       return new SSEAdapter();
     case "durable-object":
     default:
-      return new CloudflareDOAdapter();
+      return new BroadcastChannelAdapter();
   }
 }
 

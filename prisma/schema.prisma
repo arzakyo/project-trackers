@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // -----------------------------------------------------------------------------
@@ -54,6 +53,7 @@ model Account {
   refreshTokenExpiresAt DateTime?
   scope                 String?
   password              String?
+  issuer                String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
@@ -92,14 +92,22 @@ model Project {
 }
 
 model TrackerItem {
-  id          String   @id @default(cuid())
-  title       String
-  status      String   @default("todo") // todo, in_progress, done
-  priority    String   @default("medium") // low, medium, high
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id
+  type      String   @default("feature") // feature, bug
+  title     String
+  desc      String?
+  priority  String   @default("high") // high, med, low
+  status    String   @default("planned") // idea, planned, progress, blocked, staging, done
+  owner     String?
+  blocked   String?
+  version   String?
+  notes     String?
+  archived  Boolean  @default(false)
+  order     Int      @default(0)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("tracker_item")
 }

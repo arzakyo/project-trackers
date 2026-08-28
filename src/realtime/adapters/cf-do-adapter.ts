@@ -71,14 +71,15 @@ export class CloudflareDOAdapter implements IRealtimeAdapter {
   }
 
   subscribe<T = unknown>(topic: string, handler: RealtimeMessageHandler<T>): () => void {
-    if (!this.handlers.has(topic)) {
-      this.handlers.set(topic, new Set());
+    let topicHandlers = this.handlers.get(topic);
+    if (!topicHandlers) {
+      topicHandlers = new Set();
+      this.handlers.set(topic, topicHandlers);
       if (this.socket?.readyState === WebSocket.OPEN) {
         this.socket.send(JSON.stringify({ action: "subscribe", topic }));
       }
     }
-
-    this.handlers.get(topic)!.add(handler as RealtimeMessageHandler);
+    topicHandlers.add(handler as RealtimeMessageHandler);
 
     if (!this.socket) {
       this.connect();
