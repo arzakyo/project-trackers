@@ -304,22 +304,6 @@ export const BoardControls: React.FC<BoardControlsProps> = ({
               </option>
             ))}
           </select>
-
-          <div className="spacer" />
-
-          <span className="deck-label">Theme</span>
-          <div className="seg">
-            {(['light', 'dark', 'system'] as ThemeMode[]).map((t) => (
-              <button
-                key={t}
-                type="button"
-                className={`btn-board small ${view.theme === t ? 'active' : ''}`}
-                onClick={() => updateView({ theme: t })}
-              >
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Row 3: Archive & Filter Toggle */}

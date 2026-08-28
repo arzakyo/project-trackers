@@ -23,7 +23,7 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-body[data-theme="light"] .project-board-app {
+body[data-theme="light"] {
   --bg: #f4f5f8;
   --panel: #ffffff;
   --panel-2: #f0f1f5;
@@ -39,7 +39,7 @@ body[data-theme="light"] .project-board-app {
   background: var(--bg);
   color: var(--text);
   padding: 20px 20px 44px;
-  min-h: 100vh;
+  min-height: 100vh;
   font-size: 14px;
   line-height: 1.5;
 }
@@ -81,6 +81,7 @@ body[data-theme="light"] .project-board-app {
   margin: 0 0 14px;
 }
 
+.btn,
 .btn-board {
   background: var(--panel-2);
   color: var(--text);
@@ -90,53 +91,251 @@ body[data-theme="light"] .project-board-app {
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: all 0.15s ease;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  user-select: none;
+  text-decoration: none;
 }
 
+.btn:hover,
 .btn-board:hover {
   border-color: #3a3f52;
   background: var(--panel-3);
+  color: var(--text);
 }
 
+.btn:active,
+.btn-board:active {
+  transform: scale(0.98);
+}
+
+.btn.primary,
 .btn-board.primary {
   background: var(--accent-progress);
   color: #0b1512;
   border-color: var(--accent-progress);
+  font-weight: 700;
 }
 
+.btn.primary:hover,
 .btn-board.primary:hover {
   filter: brightness(1.08);
+  box-shadow: 0 4px 12px rgba(94, 234, 212, 0.2);
 }
 
+.btn.active,
 .btn-board.active {
   background: var(--text);
   color: var(--bg);
   border-color: var(--text);
 }
 
+.btn.small,
 .btn-board.small {
-  padding: 6px 11px;
-  font-size: 12.5px;
+  padding: 5px 11px;
+  font-size: 12px;
 }
 
+.btn.icon,
 .btn-board.icon {
   padding: 6px 10px;
   font-size: 13px;
 }
 
+.btn.danger,
 .btn-board.danger {
   color: var(--pri-high);
   background: transparent;
   border-color: rgba(251, 113, 133, 0.35);
 }
 
+.btn.danger:hover,
 .btn-board.danger:hover {
-  background: rgba(251, 113, 133, 0.08);
+  background: rgba(251, 113, 133, 0.12);
+  border-color: var(--pri-high);
 }
+
+/* Nav Tabs */
+.nav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-dim);
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  user-select: none;
+  cursor: pointer;
+}
+
+.nav-tab:hover {
+  color: var(--text);
+  background: var(--panel-3);
+  border-color: var(--border-soft);
+}
+
+.nav-tab:active {
+  transform: scale(0.98);
+}
+
+.nav-tab.active {
+  color: #0b1512;
+  background: var(--accent-progress);
+  border-color: var(--accent-progress);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(94, 234, 212, 0.25);
+}
+
+/* Auth Required Gate Card */
+.auth-required-card {
+  max-width: 480px;
+  margin: 50px auto;
+  padding: 36px 28px;
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
+}
+
+.auth-features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0 26px;
+  text-align: left;
+  background: var(--panel-2);
+  padding: 14px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+}
+
+/* Auth Modal Segmented Tabs */
+.auth-tabs {
+  display: flex;
+  background: var(--panel-2);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  margin-bottom: 20px;
+  gap: 4px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  font-family: inherit;
+}
+
+.auth-tab:hover {
+  color: var(--text);
+  background: var(--panel-3);
+}
+
+.auth-tab.active {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  font-weight: 700;
+}
+
+/* Owners Popup Modal Styles */
+.owners-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px 2px;
+  margin: 12px 0 16px;
+}
+
+.owner-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  font-size: 13px;
+  transition: all 0.15s ease;
+}
+
+.owner-row:hover {
+  background: var(--panel-3);
+  border-color: var(--border);
+}
+
+.owner-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.owner-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-planned);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.owner-you-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--feature);
+  background: rgba(52, 211, 153, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.owner-member-tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent-planned);
+  background: rgba(96, 165, 250, 0.12);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.owners-empty {
+  color: var(--text-faint);
+  font-size: 13px;
+  padding: 16px 0;
+  text-align: center;
+}
+
+
 
 .btn-board[disabled] {
   opacity: 0.4;
@@ -550,6 +749,7 @@ body[data-theme="light"] .project-board-app {
   line-height: 1.45;
   margin: 0;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;

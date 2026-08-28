@@ -11,18 +11,21 @@ declare global {
   var globalPrisma: PrismaClient | undefined;
 }
 
-function createPrismaClient(): PrismaClient {
+function getPrismaClient(): PrismaClient {
+  if (globalThis.globalPrisma && "boardOwner" in globalThis.globalPrisma) {
+    return globalThis.globalPrisma;
+  }
   const pool = new Pool({
     connectionString,
     ssl: connectionString.includes("supabase.com") ? { rejectUnauthorized: false } : undefined,
     max: 10,
   });
   const adapter = new PrismaPg(pool);
-  return new PrismaClient({ adapter });
+  const client = new PrismaClient({ adapter });
+  if (process.env.NODE_ENV !== "production") {
+    globalThis.globalPrisma = client;
+  }
+  return client;
 }
 
-export const prisma = globalThis.globalPrisma || createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalThis.globalPrisma = prisma;
-}
+export const prisma = getPrismaClient();

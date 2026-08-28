@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Outlet, Link, createRootRoute } from "@tanstack/react-router";
 import { RealtimeProvider } from "../realtime/react-context";
 import { useSession, signOut } from "../lib/auth-client";
 import { AuthModal } from "../components/Auth/AuthModal";
+import { ThemeMode, getStoredTheme, applyTheme } from "../lib/theme";
+import "../components/ProjectBoard/project-board.css";
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -11,94 +13,227 @@ export const Route = createRootRoute({
 export function RootLayout() {
   const { data: session, isPending } = useSession();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<ThemeMode>(getStoredTheme());
+
+  useEffect(() => {
+    // Initialize theme globally on mount
+    applyTheme(currentTheme);
+
+    const handleThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<ThemeMode>;
+      if (customEvent.detail) {
+        setCurrentTheme(customEvent.detail);
+      }
+    };
+
+    window.addEventListener("dominus4d_theme_change", handleThemeChange);
+    return () => window.removeEventListener("dominus4d_theme_change", handleThemeChange);
+  }, []);
+
+  const handleSetTheme = (theme: ThemeMode) => {
+    setCurrentTheme(theme);
+    applyTheme(theme);
+  };
 
   return (
     <RealtimeProvider>
-      <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500 selection:text-white">
-        {/* Navigation Bar */}
-        <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-900/80 border-b border-slate-800/80 shadow-lg px-6 py-3.5">
-          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
-            {/* Brand Logo & Title */}
-            <div className="flex items-center gap-6">
-              <Link to="/" className="flex items-center gap-3 group">
-                <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-md shadow-indigo-500/20 font-bold text-white text-lg transition group-hover:scale-105">
-                  T
-                </div>
-                <div>
-                  <h1 className="font-extrabold text-base tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-indigo-300">
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "var(--bg)",
+          color: "var(--text)",
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          transition: "background 0.2s ease, color 0.2s ease",
+        }}
+      >
+        {/* Navigation Bar matching original Dominus 4D Theme */}
+        <header
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 40,
+            background: "var(--panel)",
+            borderBottom: "1px solid var(--border-soft)",
+            padding: "10px 20px",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: "1600px",
+              margin: "0 auto",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "16px",
+              flexWrap: "wrap",
+            }}
+          >
+            {/* Brand Title */}
+            <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
+              <Link to="/" style={{ textDecoration: "none", color: "inherit" }}>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      color: "var(--text-faint)",
+                      fontFamily: "'Source Sans 3', sans-serif",
+                    }}
+                  >
+                    Dominus 4D
+                  </span>
+                  <h1
+                    style={{
+                      fontSize: "18px",
+                      fontWeight: 700,
+                      margin: 0,
+                      letterSpacing: "-0.015em",
+                      color: "var(--text)",
+                    }}
+                  >
                     Project Trackers
                   </h1>
-                  <p className="text-[10px] text-slate-400">Dominus 4D Realtime Board</p>
                 </div>
               </Link>
 
-              {/* Main Nav Links */}
-              <nav className="flex items-center gap-1 bg-slate-950/60 p-1 rounded-xl border border-slate-800/80 text-xs">
+              {/* Navigation Links using .nav-tab */}
+              <nav
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  background: "var(--panel-2)",
+                  padding: "3px",
+                  borderRadius: "9px",
+                  border: "1px solid var(--border-soft)",
+                }}
+              >
                 <Link
                   to="/"
-                  activeProps={{ className: "bg-indigo-600 text-white font-semibold shadow-sm" }}
-                  inactiveProps={{ className: "text-slate-400 hover:text-slate-200 hover:bg-slate-900" }}
-                  className="px-3.5 py-1.5 rounded-lg transition"
+                  activeProps={{ className: "nav-tab active" }}
+                  inactiveProps={{ className: "nav-tab" }}
                 >
                   📋 Board
                 </Link>
                 <Link
                   to="/users"
-                  activeProps={{ className: "bg-indigo-600 text-white font-semibold shadow-sm" }}
-                  inactiveProps={{ className: "text-slate-400 hover:text-slate-200 hover:bg-slate-900" }}
-                  className="px-3.5 py-1.5 rounded-lg transition"
+                  activeProps={{ className: "nav-tab active" }}
+                  inactiveProps={{ className: "nav-tab" }}
                 >
                   👥 Users
                 </Link>
                 <Link
                   to="/profile"
-                  activeProps={{ className: "bg-indigo-600 text-white font-semibold shadow-sm" }}
-                  inactiveProps={{ className: "text-slate-400 hover:text-slate-200 hover:bg-slate-900" }}
-                  className="px-3.5 py-1.5 rounded-lg transition"
+                  activeProps={{ className: "nav-tab active" }}
+                  inactiveProps={{ className: "nav-tab" }}
                 >
                   👤 Profile
                 </Link>
               </nav>
             </div>
 
-            {/* Auth Session State */}
-            <div className="flex items-center gap-3">
+            {/* Right Controls: Global Theme Switcher & Auth */}
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+              {/* Global Theme Toggle */}
+              <div className="seg" title="Global Theme Selector">
+                <button
+                  type="button"
+                  className={`btn small ${currentTheme === 'dark' ? 'active' : ''}`}
+                  onClick={() => handleSetTheme('dark')}
+                  style={{ fontSize: '11.5px', padding: '4px 8px' }}
+                >
+                  🌙 Dark
+                </button>
+                <button
+                  type="button"
+                  className={`btn small ${currentTheme === 'light' ? 'active' : ''}`}
+                  onClick={() => handleSetTheme('light')}
+                  style={{ fontSize: '11.5px', padding: '4px 8px' }}
+                >
+                  ☀️ Light
+                </button>
+                <button
+                  type="button"
+                  className={`btn small ${currentTheme === 'system' ? 'active' : ''}`}
+                  onClick={() => handleSetTheme('system')}
+                  style={{ fontSize: '11.5px', padding: '4px 8px' }}
+                >
+                  💻 System
+                </button>
+              </div>
+
+              {/* Auth Session Section */}
               {isPending ? (
-                <div className="h-8 w-24 bg-slate-800 animate-pulse rounded-lg"></div>
+                <div
+                  style={{
+                    height: "30px",
+                    width: "70px",
+                    background: "var(--panel-2)",
+                    borderRadius: "8px",
+                  }}
+                />
               ) : session?.user ? (
-                <div className="flex items-center gap-3">
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <Link
                     to="/profile"
-                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-950/60 hover:bg-slate-800 border border-slate-800 rounded-xl transition text-xs"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "7px",
+                      background: "var(--panel-2)",
+                      border: "1px solid var(--border)",
+                      padding: "4px 10px",
+                      borderRadius: "8px",
+                      color: "var(--text)",
+                      textDecoration: "none",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                    }}
                   >
-                    <div className="h-5 w-5 rounded-full bg-indigo-500 flex items-center justify-center text-[10px] font-bold text-white">
+                    <div
+                      style={{
+                        width: "18px",
+                        height: "18px",
+                        borderRadius: "50%",
+                        background: "var(--accent-planned)",
+                        color: "#ffffff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "10px",
+                        fontWeight: 700,
+                      }}
+                    >
                       {(session.user?.name || session.user?.email || "U")[0].toUpperCase()}
                     </div>
-                    <span className="font-medium text-slate-200 max-w-[140px] truncate">
-                      {session.user?.name || session.user?.email}
-                    </span>
+                    <span>{session.user?.name || session.user?.email}</span>
                   </Link>
                   <button
+                    type="button"
                     onClick={() => signOut()}
-                    className="px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition shadow-sm"
+                    className="btn danger small"
+                    style={{ fontSize: "11.5px", padding: "4px 8px" }}
                   >
                     Sign Out
                   </button>
                 </div>
               ) : (
                 <button
+                  type="button"
                   onClick={() => setShowAuthModal(true)}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition shadow-md shadow-indigo-500/25 active:scale-95 flex items-center gap-2"
+                  className="btn primary small"
+                  style={{ fontSize: "12px", padding: "5px 12px" }}
                 >
-                  <span>Sign In / Up</span>
+                  Sign In
                 </button>
               )}
             </div>
           </div>
         </header>
 
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-6 py-6">
+        {/* Content Outlet */}
+        <main style={{ maxWidth: "1600px", margin: "0 auto" }}>
           <Outlet />
         </main>
 

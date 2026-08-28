@@ -35,6 +35,8 @@ interface ConfirmModalState {
 }
 
 interface BoardModalsProps {
+  currentUser?: { name?: string | null; email?: string | null } | null;
+  registeredUserNames?: string[];
   editingCard: CardItem | null;
   isAddingNew: boolean;
   onCloseEditModal: () => void;
@@ -63,6 +65,8 @@ interface BoardModalsProps {
 }
 
 export const BoardModals: React.FC<BoardModalsProps> = ({
+  currentUser,
+  registeredUserNames = [],
   editingCard,
   isAddingNew,
   onCloseEditModal,
@@ -125,6 +129,15 @@ export const BoardModals: React.FC<BoardModalsProps> = ({
       setFNotes('');
     }
   }, [editingCard, isAddingNew]);
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCloseContextMenu();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [contextMenu, onCloseContextMenu]);
 
   useEffect(() => {
     if (promptModal) setPromptVal(promptModal.defaultValue || '');
@@ -330,47 +343,116 @@ export const BoardModals: React.FC<BoardModalsProps> = ({
       {/* Owners Management Modal */}
       {showOwnersModal && (
         <div className="overlay-board" onClick={onCloseOwnersModal}>
-          <div className="modal-board" onClick={(e) => e.stopPropagation()}>
-            <h3>Manage owners</h3>
-            <div>
+          <div className="modal-board" style={{ maxWidth: '440px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <h3 style={{ margin: 0 }}>Manage Board Owners</h3>
+              <span style={{ fontSize: '11px', color: 'var(--text-faint)', background: 'var(--panel-2)', padding: '2px 8px', borderRadius: '999px' }}>
+                {owners.length} total
+              </span>
+            </div>
+            <p style={{ fontSize: '12.5px', color: 'var(--text-dim)', margin: '0 0 12px' }}>
+              Assignees for feature and bug tracker items, synced with PostgreSQL database.
+            </p>
+
+            <div className="owners-list">
               {owners.length === 0 ? (
                 <div className="owners-empty">No owners defined yet.</div>
               ) : (
-                owners.map((o) => (
-                  <div key={o} className="owner-row">
-                    <span>{o}</span>
-                    <button type="button" onClick={() => onRemoveOwner(o)}>
-                      Remove
-                    </button>
-                  </div>
-                ))
+                owners.map((o) => {
+                  const isCurrent = Boolean(
+                    currentUser &&
+                    ((currentUser.name && o.toLowerCase() === currentUser.name.toLowerCase()) ||
+                     (currentUser.email && o.toLowerCase() === currentUser.email.toLowerCase()))
+                  );
+
+                  const isUserAccount = Boolean(
+                    registeredUserNames.length > 0 &&
+                    registeredUserNames.some((uName) => uName.toLowerCase() === o.toLowerCase())
+                  );
+
+                  return (
+                    <div key={o} className="owner-row">
+                      <div className="owner-info">
+                        <div className="owner-avatar">
+                          {o[0].toUpperCase()}
+                        </div>
+                        <span style={{ fontWeight: 600, color: 'var(--text)' }}>{o}</span>
+                        {isCurrent ? (
+                          <span className="owner-you-tag">You (Active)</span>
+                        ) : isUserAccount ? (
+                          <span className="owner-member-tag">User</span>
+                        ) : null}
+                      </div>
+
+                      {isCurrent ? (
+                        <span
+                          style={{ fontSize: '11px', color: 'var(--text-faint)', fontStyle: 'italic', padding: '4px 8px' }}
+                          title="Your active user account cannot be removed"
+                        >
+                          Protected
+                        </span>
+                      ) : isUserAccount ? (
+                        <span
+                          style={{ fontSize: '11px', color: 'var(--text-faint)', fontStyle: 'italic', padding: '4px 8px' }}
+                          title="Registered team accounts are managed via User Management"
+                        >
+                          User Account
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn-board danger small"
+                          style={{ padding: '3px 8px', fontSize: '11.5px' }}
+                          onClick={() => onRemoveOwner(o)}
+                          title={`Remove ${o} from owners`}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
 
-            <div className="row2" style={{ marginTop: '12px' }}>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (newOwnerName.trim()) {
+                  onAddOwner(newOwnerName.trim());
+                  setNewOwnerName('');
+                }
+              }}
+              style={{ display: 'flex', gap: '8px', marginTop: '16px' }}
+            >
               <input
                 type="text"
                 value={newOwnerName}
-                placeholder="Add owner name"
+                placeholder="Enter owner or team name..."
                 onChange={(e) => setNewOwnerName(e.target.value)}
+                style={{
+                  flex: 1,
+                  background: 'var(--panel-2)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
+                  color: 'var(--text)',
+                  fontSize: '13px',
+                }}
+                required
               />
               <button
-                type="button"
-                className="btn-board small"
-                onClick={() => {
-                  if (newOwnerName.trim()) {
-                    onAddOwner(newOwnerName.trim());
-                    setNewOwnerName('');
-                  }
-                }}
+                type="submit"
+                className="btn-board primary small"
+                style={{ padding: '8px 14px', fontSize: '12.5px', whiteSpace: 'nowrap' }}
               >
-                Add owner
+                + Add Owner
               </button>
-            </div>
-            <p style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '8px' }}>
-              Removing an owner from this list won't change items already assigned to them.
+            </form>
+            <p style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '10px', lineHeight: '1.4' }}>
+              Removing an owner from this list won't modify tracker items already assigned to them.
             </p>
-            <div className="modal-actions">
+            <div className="modal-actions" style={{ marginTop: '16px' }}>
               <div className="right">
                 <button
                   type="button"
@@ -463,11 +545,25 @@ export const BoardModals: React.FC<BoardModalsProps> = ({
 
       {/* Context Menu Overlay */}
       {contextMenu && (
-        <div
-          className="context-menu open"
-          style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }}
-          onClick={(e) => e.stopPropagation()}
-        >
+        <>
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 199,
+              background: 'transparent',
+            }}
+            onClick={onCloseContextMenu}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              onCloseContextMenu();
+            }}
+          />
+          <div
+            className="context-menu open"
+            style={{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px`, zIndex: 200 }}
+            onClick={(e) => e.stopPropagation()}
+          >
           <div className="context-menu-header">
             {contextMenu.field.toUpperCase()} &middot; {contextMenu.item.id}
           </div>
@@ -610,7 +706,8 @@ export const BoardModals: React.FC<BoardModalsProps> = ({
             </>
           )}
         </div>
-      )}
+      </>
+    )}
 
       {/* Custom Prompt Modal */}
       {promptModal && (

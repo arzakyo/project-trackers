@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Papa from 'papaparse';
 import { useRealtime, useRealtimeChannel } from '../../realtime/react-context';
 import { RealtimeMessage } from '../../realtime/types';
+import { useSession } from '../../lib/auth-client';
 import {
   CardItem,
   ViewState,
@@ -17,6 +18,7 @@ import {
   Priority,
   ItemType,
 } from './types';
+import { getStoredTheme, applyTheme, ThemeMode } from '../../lib/theme';
 import { BoardControls } from './BoardControls';
 import { CardView } from './CardView';
 import { TableView } from './TableView';
@@ -33,7 +35,7 @@ const DEFAULT_VIEW_STATE: ViewState = {
   tableSubGroup: false,
   tableVersionGroup: false,
   sortRules: [{ field: 'priority', dir: 'asc' }],
-  theme: 'system',
+  theme: getStoredTheme(),
   archiveFilter: 'active',
   showTime: false,
   pageSize: 50,
@@ -48,10 +50,12 @@ const DEFAULT_VIEW_STATE: ViewState = {
 
 export const ProjectBoard: React.FC = () => {
   const { publish } = useRealtime();
+  const { data: session } = useSession();
 
   // State
   const [cards, setCards] = useState<CardItem[]>(SEED_CARDS);
   const [owners, setOwners] = useState<string[]>([]);
+  const [registeredUserNames, setRegisteredUserNames] = useState<string[]>([]);
   const [view, setView] = useState<ViewState>(DEFAULT_VIEW_STATE);
   const [ioStatus, setIoStatus] = useState('');
   const [lastSyncTime, setLastSyncTime] = useState<string>('');
@@ -107,57 +111,82 @@ export const ProjectBoard: React.FC = () => {
     }
   };
 
-  // 2. Fetch Users to populate default owners list
-  const fetchOwnersFromUsers = async () => {
+  // 2. Fetch Owners from PostgreSQL Database API
+  const fetchOwnersFromDatabase = async () => {
     try {
-      const res = await fetch('/api/users');
+      const res = await fetch('/api/owners');
       if (res.ok) {
-        const users = await res.json();
-        if (Array.isArray(users)) {
-          const names = users
-            .map((u: { name?: string; email?: string }) => u.name || u.email)
-            .filter((name): name is string => Boolean(name));
-          const merged = Array.from(new Set([...names, ...owners, 'Tim IT Dominus4d', 'Tim IT Live Chat', 'Tim Nova']));
-          setOwners(merged);
+        const data = (await res.json()) as {
+          owners?: string[];
+          users?: Array<{ name?: string; email?: string }>;
+        };
+        if (data && Array.isArray(data.owners)) {
+          setOwners(data.owners);
+        }
+        if (data && Array.isArray(data.users)) {
+          const userIdentities = data.users
+            .flatMap((u) => [u.name, u.email])
+            .filter((x): x is string => Boolean(x));
+          setRegisteredUserNames(userIdentities);
         }
       }
-    } catch {}
+    } catch (err) {
+      console.warn('Database fetch fallback for owners:', err);
+    }
   };
 
   useEffect(() => {
     fetchBoardFromDatabase();
-    fetchOwnersFromUsers();
+    fetchOwnersFromDatabase();
+
+    const handleFocusSync = () => {
+      if (document.visibilityState === 'visible') {
+        fetchBoardFromDatabase();
+        fetchOwnersFromDatabase();
+      }
+    };
+
+    window.addEventListener('focus', handleFocusSync);
+    document.addEventListener('visibilitychange', handleFocusSync);
 
     try {
       const savedViewStr = localStorage.getItem(VIEW_KEY);
       if (savedViewStr) {
         const parsed = JSON.parse(savedViewStr);
+        delete parsed.theme; // Theme is strictly managed globally
         setView((prev) => ({ ...prev, ...parsed }));
       }
     } catch {}
+
+    return () => {
+      window.removeEventListener('focus', handleFocusSync);
+      document.removeEventListener('visibilitychange', handleFocusSync);
+    };
   }, []);
 
   const persistView = (updatedView: ViewState) => {
     setView(updatedView);
     try {
-      localStorage.setItem(VIEW_KEY, JSON.stringify(updatedView));
+      const copy = { ...updatedView };
+      delete (copy as Partial<ViewState>).theme;
+      localStorage.setItem(VIEW_KEY, JSON.stringify(copy));
     } catch (e) {
       console.error(e);
     }
   };
 
-  // Theme effect
+  // Listen to global theme change without overwriting
   useEffect(() => {
-    let effective = view.theme;
-    if (effective === 'system') {
-      effective =
-        window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
-          ? 'light'
-          : 'dark';
-    }
-    document.body.setAttribute('data-theme', effective === 'light' ? 'light' : 'dark');
-    persistView(view);
-  }, [view.theme]);
+    const handleThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<ThemeMode>;
+      if (customEvent.detail) {
+        setView((prev) => ({ ...prev, theme: customEvent.detail }));
+      }
+    };
+
+    window.addEventListener('dominus4d_theme_change', handleThemeChange);
+    return () => window.removeEventListener('dominus4d_theme_change', handleThemeChange);
+  }, []);
 
   // Reconcile versions filter when cards update
   useEffect(() => {
@@ -190,6 +219,8 @@ export const ProjectBoard: React.FC = () => {
       } else if (message.event === 'ITEM_DELETED' && message.payload) {
         const { id } = message.payload as { id: string };
         setCards((prev) => prev.filter((c) => c.id !== id));
+      } else if (message.event === 'OWNERS_UPDATED') {
+        fetchOwnersFromDatabase();
       }
     },
     []
@@ -436,15 +467,60 @@ export const ProjectBoard: React.FC = () => {
     await publish('project:trackers', 'ITEM_SAVED', updated);
   };
 
-  // Owners Handlers
-  const handleAddOwner = (name: string) => {
-    if (!owners.includes(name)) {
-      setOwners((prev) => [...prev, name]);
+  // Owners Handlers with Database persistence
+  const handleAddOwner = async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    if (!owners.includes(trimmed)) {
+      setOwners((prev) => [...prev, trimmed]);
+    }
+
+    try {
+      await fetch('/api/owners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      await publish('project:trackers', 'OWNERS_UPDATED', { action: 'add', name: trimmed });
+    } catch (err) {
+      console.error('Failed to save owner to database:', err);
     }
   };
 
-  const handleRemoveOwner = (name: string) => {
-    setOwners((prev) => prev.filter((o) => o !== name));
+  const handleRemoveOwner = async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    // Prevent removing any registered user from DB
+    if (registeredUserNames.some((u) => u.toLowerCase() === trimmed.toLowerCase())) {
+      return;
+    }
+
+    // Prevent removing current signed-in user
+    if (session?.user) {
+      const currentName = session.user.name?.toLowerCase();
+      const currentEmail = session.user.email?.toLowerCase();
+      if (
+        (currentName && trimmed.toLowerCase() === currentName) ||
+        (currentEmail && trimmed.toLowerCase() === currentEmail)
+      ) {
+        return;
+      }
+    }
+
+    setOwners((prev) => prev.filter((o) => o !== trimmed));
+
+    try {
+      await fetch(`/api/owners?name=${encodeURIComponent(trimmed)}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      await publish('project:trackers', 'OWNERS_UPDATED', { action: 'remove', name: trimmed });
+    } catch (err) {
+      console.error('Failed to remove owner from database:', err);
+    }
   };
 
   // Custom Dialog Helpers
@@ -693,6 +769,8 @@ export const ProjectBoard: React.FC = () => {
       )}
 
       <BoardModals
+        currentUser={session?.user}
+        registeredUserNames={registeredUserNames}
         editingCard={editingCard}
         isAddingNew={isAddingNew}
         onCloseEditModal={() => {

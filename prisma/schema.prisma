@@ -112,6 +112,16 @@ model TrackerItem {
   @@map("tracker_item")
 }
 
+model BoardOwner {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  isUser    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("board_owner")
+}
+
 model ActivityLog {
   id        String   @id @default(cuid())
   action    String

@@ -93,6 +93,14 @@ async function initDB() {
       "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 
+    CREATE TABLE IF NOT EXISTS "board_owner" (
+      "id" TEXT PRIMARY KEY,
+      "name" TEXT UNIQUE NOT NULL,
+      "isUser" BOOLEAN NOT NULL DEFAULT false,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS "activity_log" (
       "id" TEXT PRIMARY KEY,
       "action" TEXT NOT NULL,

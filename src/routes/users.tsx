@@ -47,28 +47,38 @@ export function UsersPage() {
 
   if (isPending) {
     return (
-      <div className="max-w-3xl mx-auto py-16 px-6 text-center space-y-4">
-        <div className="h-8 bg-slate-800 animate-pulse rounded w-1/3 mx-auto"></div>
-        <div className="h-48 bg-slate-900 animate-pulse rounded-2xl"></div>
+      <div style={{ maxWidth: "1200px", margin: "40px auto", padding: "0 20px", textAlign: "center" }}>
+        <div style={{ height: "30px", width: "200px", background: "var(--panel-2)", margin: "0 auto 16px", borderRadius: "8px" }} />
+        <div style={{ height: "200px", background: "var(--panel)", borderRadius: "12px", border: "1px solid var(--border-soft)" }} />
       </div>
     );
   }
 
   if (!session?.user) {
     return (
-      <div className="max-w-md mx-auto my-16 p-8 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-6 shadow-2xl">
-        <div className="h-16 w-16 bg-gradient-to-tr from-indigo-500 to-purple-500 text-white rounded-2xl flex items-center justify-center mx-auto text-3xl font-extrabold shadow-lg shadow-indigo-500/25">
-          👥
-        </div>
-        <div>
-          <h2 className="text-xl font-extrabold text-white tracking-tight font-sans">Sign In Required</h2>
-          <p className="text-xs text-slate-400 mt-1">
-            User management is available for authenticated team members only.
-          </p>
-        </div>
+      <div
+        style={{
+          maxWidth: "420px",
+          margin: "80px auto",
+          padding: "32px 24px",
+          background: "var(--panel)",
+          border: "1px solid var(--border-soft)",
+          borderRadius: "12px",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ fontSize: "36px", marginBottom: "12px" }}>👥</div>
+        <h2 style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 6px", color: "var(--text)" }}>
+          Sign In Required
+        </h2>
+        <p style={{ fontSize: "13px", color: "var(--text-dim)", margin: "0 0 24px" }}>
+          User management is available for authenticated team members only.
+        </p>
         <button
+          type="button"
           onClick={() => setShowAuthModal(true)}
-          className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition active:scale-95 w-full"
+          className="btn primary"
+          style={{ width: "100%", justifyContent: "center" }}
         >
           Sign In to View Users
         </button>
@@ -85,79 +95,148 @@ export function UsersPage() {
   );
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 py-4">
+    <div style={{ maxWidth: "1400px", margin: "24px auto", padding: "0 20px" }}>
       {/* Header Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-6">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          gap: "16px",
+          flexWrap: "wrap",
+          marginBottom: "20px",
+          borderBottom: "1px solid var(--border-soft)",
+          paddingBottom: "16px",
+        }}
+      >
         <div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight">User Management</h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Registered team members & board collaborators
+          <span
+            style={{
+              fontSize: "11px",
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "var(--text-faint)",
+              fontFamily: "'Source Sans 3', sans-serif",
+            }}
+          >
+            Team Directory
+          </span>
+          <h1 style={{ fontSize: "24px", fontWeight: 700, margin: "2px 0 0", color: "var(--text)" }}>
+            User Management
+          </h1>
+          <p style={{ fontSize: "13px", color: "var(--text-dim)", margin: "4px 0 0" }}>
+            Registered team members and board collaborators
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <input
             type="text"
-            placeholder="Search users by name or email..."
+            placeholder="Search users..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 w-64 transition"
+            style={{
+              background: "var(--panel-2)",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+              padding: "7px 12px",
+              color: "var(--text)",
+              fontSize: "13px",
+              width: "220px",
+            }}
           />
-          <button
-            onClick={fetchUsers}
-            className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl border border-slate-700 transition"
-          >
+          <button type="button" onClick={fetchUsers} className="btn small">
             Refresh
           </button>
         </div>
       </div>
 
-      {/* Users Table */}
+      {/* Users Table matching Dominus 4D table-wrap */}
       {loading ? (
-        <div className="py-16 text-center text-slate-500 animate-pulse text-sm">
+        <div style={{ padding: "40px 0", textAlign: "center", color: "var(--text-faint)" }}>
           Loading team members...
         </div>
       ) : filteredUsers.length === 0 ? (
-        <div className="py-16 text-center text-slate-500 bg-slate-900/40 rounded-2xl border border-slate-800/80 text-sm">
+        <div
+          style={{
+            padding: "40px 0",
+            textAlign: "center",
+            color: "var(--text-faint)",
+            background: "var(--panel)",
+            borderRadius: "12px",
+            border: "1px solid var(--border-soft)",
+          }}
+        >
           No registered users found matching "{search}".
         </div>
       ) : (
-        <div className="overflow-x-auto border border-slate-800 rounded-2xl bg-slate-900/60 shadow-xl">
-          <table className="w-full text-left text-xs border-collapse">
+        <div className="table-wrap">
+          <table className="roadmap-table">
             <thead>
-              <tr className="bg-slate-900 text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-800">
-                <th className="py-3.5 px-4">User</th>
-                <th className="py-3.5 px-4">Email</th>
-                <th className="py-3.5 px-4">Status</th>
-                <th className="py-3.5 px-4">Joined Date</th>
-                <th className="py-3.5 px-4">ID</th>
+              <tr>
+                <th style={{ padding: "12px 16px" }}>User</th>
+                <th style={{ padding: "12px 16px" }}>Email</th>
+                <th style={{ padding: "12px 16px" }}>Status</th>
+                <th style={{ padding: "12px 16px" }}>Joined Date</th>
+                <th style={{ padding: "12px 16px" }}>ID</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-slate-300">
+            <tbody>
               {filteredUsers.map((u) => (
-                <tr key={u.id} className="hover:bg-slate-800/40 transition">
-                  <td className="py-3.5 px-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                <tr key={u.id}>
+                  <td style={{ padding: "12px 16px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <div
+                        style={{
+                          width: "28px",
+                          height: "28px",
+                          borderRadius: "6px",
+                          background: "var(--accent-planned)",
+                          color: "#ffffff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: 700,
+                          fontSize: "12px",
+                          flexShrink: 0,
+                        }}
+                      >
                         {u.image ? (
-                          <img src={u.image} alt={u.name} className="h-full w-full rounded-xl object-cover" />
+                          <img
+                            src={u.image}
+                            alt={u.name}
+                            style={{ width: "100%", height: "100%", borderRadius: "6px", objectFit: "cover" }}
+                          />
                         ) : (
                           (u.name || u.email || "U")[0].toUpperCase()
                         )}
                       </div>
-                      <span className="font-semibold text-slate-100">{u.name || "User"}</span>
+                      <span style={{ fontWeight: 600, color: "var(--text)" }}>{u.name || "User"}</span>
                     </div>
                   </td>
-                  <td className="py-3.5 px-4 font-mono text-slate-300">{u.email}</td>
-                  <td className="py-3.5 px-4">
-                    <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full text-[10px] font-semibold">
+                  <td style={{ padding: "12px 16px", color: "var(--text-dim)", fontFamily: "monospace" }}>
+                    {u.email}
+                  </td>
+                  <td style={{ padding: "12px 16px" }}>
+                    <span
+                      style={{
+                        background: "rgba(52, 211, 153, 0.12)",
+                        color: "var(--feature)",
+                        padding: "2px 8px",
+                        borderRadius: "4px",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                      }}
+                    >
                       Verified Member
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-slate-400">
+                  <td style={{ padding: "12px 16px", color: "var(--text-faint)", fontSize: "12px" }}>
                     {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "Seed Date"}
                   </td>
-                  <td className="py-3.5 px-4 font-mono text-slate-500 text-[10px]">{u.id}</td>
+                  <td style={{ padding: "12px 16px", color: "var(--text-faint)", fontSize: "11px", fontFamily: "monospace" }}>
+                    {u.id}
+                  </td>
                 </tr>
               ))}
             </tbody>

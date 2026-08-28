@@ -3,6 +3,7 @@ import { IRealtimeAdapter, RealtimeMessageHandler, RealtimeMessage, RealtimeDriv
 export class CloudflareDOAdapter implements IRealtimeAdapter {
   readonly driverName: RealtimeDriverType = "durable-object";
   private socket: WebSocket | null = null;
+  private channel: BroadcastChannel | null = null;
   private handlers: Map<string, Set<RealtimeMessageHandler>> = new Map();
   private endpoint: string;
   private isConnecting = false;
@@ -10,6 +11,19 @@ export class CloudflareDOAdapter implements IRealtimeAdapter {
 
   constructor(endpoint = "/api/realtime/ws") {
     this.endpoint = endpoint;
+
+    // Cross-tab BroadcastChannel for 100% instant local synchronization
+    if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+      this.channel = new BroadcastChannel("project_trackers_realtime");
+      this.channel.onmessage = (event) => {
+        try {
+          const message: RealtimeMessage = event.data;
+          if (message && message.topic && this.handlers.has(message.topic)) {
+            this.handlers.get(message.topic)?.forEach((handler) => handler(message));
+          }
+        } catch {}
+      };
+    }
   }
 
   connect(): void {
@@ -34,11 +48,10 @@ export class CloudflareDOAdapter implements IRealtimeAdapter {
         try {
           const data: RealtimeMessage = JSON.parse(event.data);
           if (data.topic && this.handlers.has(data.topic)) {
-            const topicHandlers = this.handlers.get(data.topic);
-            topicHandlers?.forEach((handler) => handler(data));
+            this.handlers.get(data.topic)?.forEach((handler) => handler(data));
           }
         } catch {
-          // Ignore non-json or status messages
+          // Ignore non-json or ping messages
         }
       };
 
@@ -59,7 +72,7 @@ export class CloudflareDOAdapter implements IRealtimeAdapter {
 
   private scheduleReconnect(): void {
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-    this.reconnectTimer = setTimeout(() => this.connect(), 3000);
+    this.reconnectTimer = setTimeout(() => this.connect(), 5000);
   }
 
   disconnect(): void {
@@ -81,7 +94,7 @@ export class CloudflareDOAdapter implements IRealtimeAdapter {
     }
     topicHandlers.add(handler as RealtimeMessageHandler);
 
-    if (!this.socket) {
+    if (!this.socket && !this.isConnecting) {
       this.connect();
     }
 
@@ -100,22 +113,42 @@ export class CloudflareDOAdapter implements IRealtimeAdapter {
   }
 
   async publish<T = unknown>(topic: string, event: string, payload: T): Promise<void> {
+    const message: RealtimeMessage<T> = {
+      topic,
+      event,
+      payload,
+      timestamp: Date.now(),
+    };
+
+    // 1. Broadcast across all tabs via BroadcastChannel
+    if (this.channel) {
+      try {
+        this.channel.postMessage(message);
+      } catch {}
+    }
+
+    // 2. Publish to Cloudflare Durable Object WebSocket if open
     if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(
-        JSON.stringify({
-          action: "publish",
-          topic,
-          event,
-          payload,
-        })
-      );
-    } else {
-      // Fallback via HTTP API if WebSocket is connecting
+      try {
+        this.socket.send(
+          JSON.stringify({
+            action: "publish",
+            topic,
+            event,
+            payload,
+          })
+        );
+        return;
+      } catch {}
+    }
+
+    // 3. Fallback via server API
+    try {
       await fetch("/api/realtime/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ topic, event, payload }),
       });
-    }
+    } catch {}
   }
 }

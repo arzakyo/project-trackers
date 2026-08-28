@@ -1,22 +1,23 @@
 import { IRealtimeAdapter, RealtimeDriverType } from "./types";
-import { BroadcastChannelAdapter } from "./adapters/broadcast-adapter";
-import { StandardWebSocketAdapter } from "./adapters/websocket-adapter";
 import { SSEAdapter } from "./adapters/sse-adapter";
+import { StandardWebSocketAdapter } from "./adapters/websocket-adapter";
+import { CloudflareDOAdapter } from "./adapters/cf-do-adapter";
+import { BroadcastChannelAdapter } from "./adapters/broadcast-adapter";
 
 export function createRealtimeAdapter(driver?: RealtimeDriverType): IRealtimeAdapter {
   const configuredDriver =
     driver ||
     (typeof process !== "undefined" && (process.env?.VITE_REALTIME_DRIVER as RealtimeDriverType)) ||
-    "durable-object";
+    "sse";
 
   switch (configuredDriver) {
     case "websocket":
       return new StandardWebSocketAdapter();
-    case "sse":
-      return new SSEAdapter();
     case "durable-object":
+      return new CloudflareDOAdapter();
+    case "sse":
     default:
-      return new BroadcastChannelAdapter();
+      return new SSEAdapter();
   }
 }
 

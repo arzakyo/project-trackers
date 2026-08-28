@@ -31,9 +31,9 @@ export function DashboardComponent() {
 
   if (isPending) {
     return (
-      <div className="max-w-3xl mx-auto py-16 px-6 text-center space-y-4">
-        <div className="h-8 bg-slate-800 animate-pulse rounded w-1/3 mx-auto"></div>
-        <div className="h-64 bg-slate-900 animate-pulse rounded-2xl"></div>
+      <div style={{ maxWidth: "1200px", margin: "60px auto", padding: "0 20px", textAlign: "center" }}>
+        <div style={{ height: "32px", width: "220px", background: "var(--panel-2)", margin: "0 auto 16px", borderRadius: "8px" }} />
+        <div style={{ height: "260px", background: "var(--panel)", borderRadius: "12px", border: "1px solid var(--border-soft)" }} />
       </div>
     );
   }
@@ -41,19 +41,55 @@ export function DashboardComponent() {
   // Auth Guard: Require Login to view & edit project board
   if (!session?.user) {
     return (
-      <div className="max-w-md mx-auto my-16 p-8 bg-slate-900 border border-slate-800 rounded-2xl text-center space-y-6 shadow-2xl">
-        <div className="h-16 w-16 bg-gradient-to-tr from-indigo-500 to-purple-500 text-white rounded-2xl flex items-center justify-center mx-auto text-3xl font-extrabold shadow-lg shadow-indigo-500/25">
+      <div className="auth-required-card">
+        <div
+          style={{
+            width: "56px",
+            height: "56px",
+            borderRadius: "14px",
+            background: "rgba(94, 234, 212, 0.12)",
+            border: "1px solid rgba(94, 234, 212, 0.25)",
+            color: "var(--accent-progress)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: "0 auto 16px",
+            fontSize: "24px",
+          }}
+        >
           🔒
         </div>
-        <div>
-          <h2 className="text-xl font-extrabold text-white tracking-tight">Authentication Required</h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Please sign in to view and collaborate on the Dominus 4D Project Board.
-          </p>
+        <span className="brand-eyebrow" style={{ display: "block", marginBottom: "4px" }}>
+          Dominus 4D Board
+        </span>
+        <h2 style={{ fontSize: "22px", fontWeight: 700, margin: "0 0 6px", color: "var(--text)" }}>
+          Sign In to Access Board
+        </h2>
+        <p style={{ fontSize: "13px", color: "var(--text-dim)", margin: "0 0 16px", lineHeight: "1.5" }}>
+          Collaborate in real-time, organize features and bugs, and track releases with live sync.
+        </p>
+
+        {/* Feature preview bullets */}
+        <div className="auth-features-list">
+          <div className="auth-feature-item">
+            <span style={{ color: "var(--accent-progress)" }}>✓</span>
+            <span>Real-time collaborative Kanban card & table views</span>
+          </div>
+          <div className="auth-feature-item">
+            <span style={{ color: "var(--accent-progress)" }}>✓</span>
+            <span>Optimistic Concurrency Control (OCC) conflict protection</span>
+          </div>
+          <div className="auth-feature-item">
+            <span style={{ color: "var(--accent-progress)" }}>✓</span>
+            <span>Instant cross-tab live synchronization & CSV/JSON import</span>
+          </div>
         </div>
+
         <button
+          type="button"
           onClick={() => setShowAuthModal(true)}
-          className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition active:scale-95 w-full"
+          className="btn primary"
+          style={{ width: "100%", justifyContent: "center", padding: "11px 16px", fontSize: "14px" }}
         >
           Sign In / Sign Up to Continue
         </button>
@@ -64,7 +100,7 @@ export function DashboardComponent() {
   }
 
   return (
-    <div className="space-y-4">
+    <div style={{ padding: "0" }}>
       {/* Main Dominus 4D Project Board Component */}
       <ProjectBoard />
     </div>
