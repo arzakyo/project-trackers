@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useRealtime, useRealtimeChannel } from "../realtime/react-context";
 import { RealtimeMessage } from "../realtime/types";
 
@@ -8,6 +9,10 @@ interface TrackerTask {
   status: "todo" | "in_progress" | "done";
   priority: "low" | "medium" | "high";
 }
+
+export const Route = createFileRoute("/")({
+  component: DashboardComponent,
+});
 
 export function DashboardComponent() {
   const { driverName, publish } = useRealtime();

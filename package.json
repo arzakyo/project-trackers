@@ -2,9 +2,12 @@
   "name": "project-trackers",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "bun --hot dev.ts",
+    "dev": "vite",
+    "dev:static": "bun --hot dev.ts",
     "dev:wrangler": "wrangler dev",
+    "build": "vite build",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {

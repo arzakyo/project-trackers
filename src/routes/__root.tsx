@@ -1,7 +1,11 @@
 import React from "react";
-import { Outlet } from "@tanstack/react-router";
+import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { RealtimeProvider } from "../realtime/react-context";
 import { useSession, signOut, signIn } from "../lib/auth-client";
+
+export const Route = createRootRoute({
+  component: RootLayout,
+});
 
 export function RootLayout() {
   const { data: session, isPending } = useSession();
@@ -27,10 +31,10 @@ export function RootLayout() {
             <div className="flex items-center gap-4">
               {isPending ? (
                 <div className="h-8 w-24 bg-slate-800 animate-pulse rounded-lg"></div>
-              ) : session ? (
+              ) : session?.user ? (
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-slate-300">
-                    {session.user.name || session.user.email}
+                    {session.user?.name || session.user?.email || "User"}
                   </span>
                   <button
                     onClick={() => signOut()}
