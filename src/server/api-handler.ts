@@ -24,6 +24,41 @@ export function broadcastRealtime(topic: string, event: string, payload: unknown
   }
 }
 
+// Database helper functions for BoardOwner to ensure reliable operation
+async function getDbBoardOwners(): Promise<Array<{ id: string; name: string; isUser: boolean }>> {
+  if (prisma && prisma.boardOwner && typeof prisma.boardOwner.findMany === "function") {
+    return prisma.boardOwner.findMany({ orderBy: { createdAt: "asc" } });
+  }
+  return prisma.$queryRawUnsafe<Array<{ id: string; name: string; isUser: boolean }>>(
+    'SELECT id, name, "isUser" FROM board_owner ORDER BY "createdAt" ASC'
+  );
+}
+
+async function upsertDbBoardOwner(name: string): Promise<{ id: string; name: string; isUser: boolean }> {
+  if (prisma && prisma.boardOwner && typeof prisma.boardOwner.upsert === "function") {
+    return prisma.boardOwner.upsert({
+      where: { name },
+      update: {},
+      create: { name, isUser: false },
+    });
+  }
+  const id = `bo_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  await prisma.$executeRawUnsafe(
+    'INSERT INTO board_owner (id, name, "isUser", "createdAt", "updatedAt") VALUES ($1, $2, false, NOW(), NOW()) ON CONFLICT (name) DO NOTHING',
+    id,
+    name
+  );
+  return { id, name, isUser: false };
+}
+
+async function deleteDbBoardOwner(name: string): Promise<void> {
+  if (prisma && prisma.boardOwner && typeof prisma.boardOwner.deleteMany === "function") {
+    await prisma.boardOwner.deleteMany({ where: { name } });
+    return;
+  }
+  await prisma.$executeRawUnsafe('DELETE FROM board_owner WHERE name = $1', name);
+}
+
 export function createApiMiddleware(): Connect.NextHandleFunction {
   return async (req, res, next) => {
     const url = new URL(req.url || "/", `http://${req.headers.host || "localhost:3000"}`);
@@ -37,16 +72,17 @@ export function createApiMiddleware(): Connect.NextHandleFunction {
 
     // Helper: Read JSON Body
     const readBody = async (): Promise<Record<string, unknown> | Array<Record<string, unknown>>> => {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         let body = "";
         req.on("data", (chunk) => (body += chunk));
         req.on("end", () => {
           try {
             resolve(body ? JSON.parse(body) : {});
-          } catch (e) {
-            reject(e);
+          } catch {
+            resolve({});
           }
         });
+        req.on("error", () => resolve({}));
       });
     };
 
@@ -315,41 +351,27 @@ export function createApiMiddleware(): Connect.NextHandleFunction {
       try {
         // GET /api/owners - Returns all owners (registered users + custom board owners)
         if (req.method === "GET") {
-          const hasBoardOwner = Boolean(prisma && "boardOwner" in prisma && prisma.boardOwner);
-
-          const [users, customOwners] = await Promise.all([
+          const [users, dbOwners] = await Promise.all([
             prisma.user.findMany({
               select: { id: true, name: true, email: true },
               orderBy: { createdAt: "asc" },
             }),
-            hasBoardOwner
-              ? prisma.boardOwner.findMany({ orderBy: { createdAt: "asc" } })
-              : Promise.resolve([]),
+            getDbBoardOwners(),
           ]);
 
-          // Seed default team owners if empty
-          if (hasBoardOwner && customOwners.length === 0) {
+          let finalDbOwners = dbOwners;
+          // Seed default team owners if database table is empty
+          if (dbOwners.length === 0) {
             const defaults = ["Tim IT Dominus4d", "Tim IT Live Chat", "Tim Nova"];
-            await Promise.all(
-              defaults.map((name) =>
-                prisma.boardOwner.upsert({
-                  where: { name },
-                  update: {},
-                  create: { name, isUser: false },
-                })
-              )
-            );
+            try {
+              await Promise.all(defaults.map((name) => upsertDbBoardOwner(name)));
+              finalDbOwners = await getDbBoardOwners();
+            } catch (seedErr) {
+              console.warn("Could not seed default board owners:", seedErr);
+            }
           }
 
-          const freshCustomOwners = hasBoardOwner && customOwners.length === 0
-            ? await prisma.boardOwner.findMany({ orderBy: { createdAt: "asc" } })
-            : customOwners;
-
-          const defaultFallbackTeam = ["Tim IT Dominus4d", "Tim IT Live Chat", "Tim Nova"];
-          const teamNames = freshCustomOwners.length > 0
-            ? freshCustomOwners.map((o) => o.name)
-            : defaultFallbackTeam;
-
+          const teamNames = finalDbOwners.map((o) => o.name);
           const userOwners = users.map((u) => ({
             name: u.name || u.email,
             email: u.email,
@@ -357,9 +379,9 @@ export function createApiMiddleware(): Connect.NextHandleFunction {
             isUser: true,
           }));
 
-          const teamOwners = teamNames.map((name, i) => ({
-            name,
-            id: `team-${i}`,
+          const teamOwners = finalDbOwners.map((o) => ({
+            name: o.name,
+            id: o.id,
             isUser: false,
           }));
 
@@ -381,20 +403,10 @@ export function createApiMiddleware(): Connect.NextHandleFunction {
             return;
           }
 
-          const hasBoardOwner = Boolean(prisma && "boardOwner" in prisma && prisma.boardOwner);
-          if (hasBoardOwner) {
-            const created = await prisma.boardOwner.upsert({
-              where: { name },
-              update: {},
-              create: { name, isUser: false },
-            });
-            broadcastRealtime("project:trackers", "OWNERS_UPDATED", { action: "add", name });
-            sendJson(created, 201);
-            return;
-          }
+          const created = await upsertDbBoardOwner(name);
 
           broadcastRealtime("project:trackers", "OWNERS_UPDATED", { action: "add", name });
-          sendJson({ name, isUser: false }, 201);
+          sendJson(created, 201);
           return;
         }
 
@@ -409,12 +421,7 @@ export function createApiMiddleware(): Connect.NextHandleFunction {
             return;
           }
 
-          const hasBoardOwner = Boolean(prisma && "boardOwner" in prisma && prisma.boardOwner);
-          if (hasBoardOwner) {
-            await prisma.boardOwner.deleteMany({
-              where: { name },
-            });
-          }
+          await deleteDbBoardOwner(name);
 
           broadcastRealtime("project:trackers", "OWNERS_UPDATED", { action: "remove", name });
           sendJson({ success: true, name });

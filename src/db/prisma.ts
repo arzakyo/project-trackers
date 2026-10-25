@@ -12,7 +12,7 @@ declare global {
 }
 
 function getPrismaClient(): PrismaClient {
-  if (globalThis.globalPrisma && "boardOwner" in globalThis.globalPrisma) {
+  if (globalThis.globalPrisma && typeof (globalThis.globalPrisma as any).boardOwner?.findMany === "function") {
     return globalThis.globalPrisma;
   }
   const pool = new Pool({

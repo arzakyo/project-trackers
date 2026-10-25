@@ -477,11 +477,14 @@ export const ProjectBoard: React.FC = () => {
     }
 
     try {
-      await fetch('/api/owners', {
+      const res = await fetch('/api/owners', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: trimmed }),
       });
+      if (res.ok) {
+        await fetchOwnersFromDatabase();
+      }
       await publish('project:trackers', 'OWNERS_UPDATED', { action: 'add', name: trimmed });
     } catch (err) {
       console.error('Failed to save owner to database:', err);
@@ -512,11 +515,14 @@ export const ProjectBoard: React.FC = () => {
     setOwners((prev) => prev.filter((o) => o !== trimmed));
 
     try {
-      await fetch(`/api/owners?name=${encodeURIComponent(trimmed)}`, {
+      const res = await fetch(`/api/owners?name=${encodeURIComponent(trimmed)}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: trimmed }),
       });
+      if (res.ok) {
+        await fetchOwnersFromDatabase();
+      }
       await publish('project:trackers', 'OWNERS_UPDATED', { action: 'remove', name: trimmed });
     } catch (err) {
       console.error('Failed to remove owner from database:', err);

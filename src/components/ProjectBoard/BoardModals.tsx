@@ -102,6 +102,7 @@ export const BoardModals: React.FC<BoardModalsProps> = ({
 
   // Owners Modal State
   const [newOwnerName, setNewOwnerName] = useState('');
+  const [ownerError, setOwnerError] = useState('');
 
   // Prompt Form State
   const [promptVal, setPromptVal] = useState('');
@@ -418,36 +419,54 @@ export const BoardModals: React.FC<BoardModalsProps> = ({
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                if (newOwnerName.trim()) {
-                  onAddOwner(newOwnerName.trim());
-                  setNewOwnerName('');
+                const trimmed = newOwnerName.trim();
+                if (!trimmed) {
+                  setOwnerError('Owner name cannot be empty');
+                  return;
                 }
+                if (owners.some((o) => o.toLowerCase() === trimmed.toLowerCase())) {
+                  setOwnerError(`"${trimmed}" is already in the board owners list`);
+                  return;
+                }
+                setOwnerError('');
+                onAddOwner(trimmed);
+                setNewOwnerName('');
               }}
-              style={{ display: 'flex', gap: '8px', marginTop: '16px' }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '16px' }}
             >
-              <input
-                type="text"
-                value={newOwnerName}
-                placeholder="Enter owner or team name..."
-                onChange={(e) => setNewOwnerName(e.target.value)}
-                style={{
-                  flex: 1,
-                  background: 'var(--panel-2)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                  padding: '8px 12px',
-                  color: 'var(--text)',
-                  fontSize: '13px',
-                }}
-                required
-              />
-              <button
-                type="submit"
-                className="btn-board primary small"
-                style={{ padding: '8px 14px', fontSize: '12.5px', whiteSpace: 'nowrap' }}
-              >
-                + Add Owner
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  value={newOwnerName}
+                  placeholder="Enter owner or team name..."
+                  onChange={(e) => {
+                    setNewOwnerName(e.target.value);
+                    if (ownerError) setOwnerError('');
+                  }}
+                  style={{
+                    flex: 1,
+                    background: 'var(--panel-2)',
+                    border: ownerError ? '1px solid var(--danger)' : '1px solid var(--border)',
+                    borderRadius: '8px',
+                    padding: '8px 12px',
+                    color: 'var(--text)',
+                    fontSize: '13px',
+                  }}
+                  required
+                />
+                <button
+                  type="submit"
+                  className="btn-board primary small"
+                  style={{ padding: '8px 14px', fontSize: '12.5px', whiteSpace: 'nowrap' }}
+                >
+                  + Add Owner
+                </button>
+              </div>
+              {ownerError && (
+                <span style={{ fontSize: '11.5px', color: 'var(--danger)', marginTop: '2px' }}>
+                  {ownerError}
+                </span>
+              )}
             </form>
             <p style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '10px', lineHeight: '1.4' }}>
               Removing an owner from this list won't modify tracker items already assigned to them.
@@ -457,7 +476,11 @@ export const BoardModals: React.FC<BoardModalsProps> = ({
                 <button
                   type="button"
                   className="btn-board small"
-                  onClick={onCloseOwnersModal}
+                  onClick={() => {
+                    setOwnerError('');
+                    setNewOwnerName('');
+                    onCloseOwnersModal();
+                  }}
                 >
                   Close
                 </button>
